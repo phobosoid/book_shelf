@@ -562,7 +562,7 @@ function addRow(){
   const ri = rows.length, key = SEC_ORDER[ri % SEC_ORDER.length], sec = SECTIONS[key];
   const el = $('section', 'row pending'), track = $('div', 'track'), board = $('div', 'board');
   const lab = $('button', 'shelflabel', esc(sec.label) + (sec.intro ? ' <i>ⓘ</i>' : '')); lab.type = 'button';
-  lab.addEventListener('click', e => { e.stopPropagation(); if (ri === activeIdx) showIntro(key); else goTo(ri); });
+  lab.addEventListener('click', e => { e.stopPropagation(); lab.blur(); if (ri === activeIdx) showIntro(key); else goTo(ri); });
   el.append(track, board, lab); stack.append(el);
   const row = {el, track, ri, key, f: FACTOR[ri % 3], W: 1, off: Math.random() * 600};
   el._row = row; rows.push(row); fillRow(row);
@@ -873,6 +873,7 @@ const intro = document.getElementById('intro');
 let introT;
 function showIntro(key){
   const sec = SECTIONS[key]; if (!sec.intro) return;
+  if (intro.classList.contains('show')) { intro.classList.remove('show'); clearTimeout(introT); return; }   // second click on the title closes it
   intro.innerHTML = `<b>${esc(sec.label)}</b><i>${esc(sec.sub || '')}</i><p>${esc(sec.intro)}</p>`;
   const lab = document.querySelector('.row.active .shelflabel');
   if (lab) { const r = lab.getBoundingClientRect(); intro.style.top = (r.bottom + 12) + 'px'; intro.style.left = Math.max(16, r.left) + 'px'; intro.style.transform = ''; }

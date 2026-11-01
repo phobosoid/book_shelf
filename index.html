@@ -99,7 +99,7 @@ body.sheet-open .rail,body.sheet-open .hint{opacity:0;pointer-events:none}
 .track .book{transform-origin:50% 100% 0;transform:translateZ(var(--z0)) rotateZ(var(--lean));transition:transform .5s cubic-bezier(.2,.8,.2,1);cursor:pointer}
 .track .book.pulled{transform:translateZ(var(--z1)) rotateY(-90deg)}
 /* resting books show only their spine: side faces of neighbours overlap and z-fight (the shimmer) */
-.track .back{display:none}
+.track .back,.track .topf{display:none}   /* shelf books show only the spine; top faces smear towards the vanishing point */
 .track .book .leaf{visibility:hidden;transition:visibility 0s .5s}
 .track .book.pulled .leaf{visibility:visible;transition-delay:0s}
 .face{position:absolute;left:0;top:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}

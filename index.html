@@ -50,8 +50,9 @@ html,body{height:100%;overflow:hidden;background:var(--room);color:var(--ink-sof
 .tab{background:transparent;color:var(--accent);border:1px solid transparent;border-radius:99px;padding:8px 16px;font:500 var(--fs-ui) var(--font-ui);letter-spacing:.16em;text-transform:uppercase;cursor:pointer;transition:background .2s,border-color .2s}
 .tab:hover{background:rgba(255,255,255,.5)}
 .tab[aria-selected=true]{background:var(--btn-hover);border-color:rgba(107,79,42,.3)}
-.intro{position:fixed;z-index:7;left:50%;top:calc(var(--head) + 14px);width:min(680px,calc(100vw - 32px));transform:translate(-50%,-8px);padding:18px 22px;border-radius:14px;background:var(--card);color:var(--ink-soft);box-shadow:var(--shadow-card);opacity:0;pointer-events:none;transition:opacity .5s,transform .5s}
-.intro.show{opacity:1;transform:translate(-50%,0);pointer-events:auto;cursor:pointer}
+.intro{position:fixed;z-index:7;left:16px;top:calc(var(--head) + clamp(64px,9vh,84px));width:min(680px,calc(100vw - 32px));transform:translateY(-8px);padding:18px 22px;border-radius:14px;background:#fffcf6;color:var(--ink-soft);box-shadow:var(--shadow-card);opacity:0;pointer-events:none;transition:opacity .5s,transform .5s}
+.intro::before{content:"";position:absolute;left:30px;top:-7px;width:14px;height:14px;background:#fffcf6;transform:rotate(45deg)}
+.intro.show{opacity:1;transform:none;pointer-events:auto;cursor:pointer}
 .intro b{display:block;font:700 italic 24px/1.1 var(--font-display);color:var(--accent);margin-bottom:2px}
 .intro i{display:block;font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.6;margin-bottom:8px;font-style:normal}
 .intro p{font:500 16px/1.5 var(--font-display)}
@@ -76,6 +77,9 @@ html,body{height:100%;overflow:hidden;background:var(--room);color:var(--ink-sof
 .shelflabel{transition:all var(--dur) var(--ease),background .2s}
 .row.active .shelflabel{top:12px;background:transparent;border-color:transparent;padding:0;font:700 italic clamp(24px,3.2vw,38px)/1.05 var(--font-display);letter-spacing:0;text-transform:none;color:var(--accent-deep);cursor:pointer}
 .row.active .shelflabel:hover{background:transparent}
+.shelflabel:focus{outline:none}
+.shelflabel:focus-visible{outline:2px solid var(--accent);outline-offset:6px;border-radius:var(--r-pill)}
+button:focus:not(:focus-visible){outline:none}
 .row.active .shelflabel i{font:500 var(--fs-label) var(--font-ui);letter-spacing:var(--track);opacity:.6;vertical-align:middle;margin-left:10px}
 .rail{position:fixed;right:max(12px,1.6vw);top:50%;transform:translateY(-50%);z-index:8;display:flex;flex-direction:column;gap:10px;align-items:center}
 .rail button{width:10px;height:10px;border-radius:50%;border:1px solid var(--accent);background:transparent;padding:0;cursor:pointer;transition:all .35s var(--ease)}
@@ -668,7 +672,6 @@ shelf.addEventListener('keydown', e => {
   const el = e.target.closest && e.target.closest('.book');
   if ((e.key === 'Enter' || e.key === ' ') && el) { e.preventDefault(); openBook(el); }
   if (e.key === 'ArrowRight') vel += 700; if (e.key === 'ArrowLeft') vel -= 700;
-  if (e.key === 'ArrowDown') { e.preventDefault(); nextShelf(1); } if (e.key === 'ArrowUp') { e.preventDefault(); nextShelf(-1); }
 });
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (state === 'shelf' && (Math.abs(innerWidth - lastW) > 1 || Math.abs(innerHeight - lastH) > 1)) { layout(); } }, 150); });   // ignore no-op resizes: a rebuild would throw away running fly-in animations
 
@@ -805,6 +808,7 @@ async function closeInk(){
 }
 
 addEventListener('keydown', e => {
+  if (state === 'shelf' && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); nextShelf(e.key === 'ArrowDown' ? 1 : -1); return; }
   if (e.key !== 'Escape') return;
   if (state === 'page') closeInk(); else if (state === 'cover') closeBook(); else if (state === 'sheet') closeSheet();
 });
@@ -870,6 +874,8 @@ let introT;
 function showIntro(key){
   const sec = SECTIONS[key]; if (!sec.intro) return;
   intro.innerHTML = `<b>${esc(sec.label)}</b><i>${esc(sec.sub || '')}</i><p>${esc(sec.intro)}</p>`;
+  const lab = document.querySelector('.row.active .shelflabel');
+  if (lab) { const r = lab.getBoundingClientRect(); intro.style.top = (r.bottom + 12) + 'px'; intro.style.left = Math.max(16, r.left) + 'px'; intro.style.transform = ''; }
   intro.classList.add('show'); clearTimeout(introT); introT = setTimeout(() => intro.classList.remove('show'), 9000);
 }
 intro.addEventListener('click', () => intro.classList.remove('show'));

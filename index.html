@@ -27,6 +27,7 @@
   --font-condensed:'Oswald','Arial Narrow',sans-serif;      /* book-spine artwork only */
   --fs-label:10px; --fs-ui:11px; --track:.18em;
   /* ---- shape ---- */
+  --dur:.75s; --ease:cubic-bezier(.65,0,.25,1);
   --r-pill:99px; --r-card:14px; --shadow-card:0 12px 40px rgba(60,40,15,.22);
   --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.1 -.25'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   --paper-grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35  0 0 0 0 .25  0 0 0 0 .12  0 0 0 .55 -.18'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
@@ -36,8 +37,8 @@
 html,body{height:100%;overflow:hidden;background:var(--room);color:var(--ink-soft);font-family:var(--font-ui);-webkit-font-smoothing:antialiased}
 
 /* ---------- room ---------- */
-.shelf{position:fixed;left:0;right:0;bottom:0;top:var(--head);overflow-y:auto;overflow-x:hidden;scroll-snap-type:y proximity;scrollbar-width:none;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab}
-.shelf::-webkit-scrollbar{display:none}
+.shelf{position:fixed;left:0;right:0;bottom:0;top:var(--head);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.stack{position:absolute;left:0;right:0;top:0;transition:transform var(--dur) var(--ease);will-change:transform}
 .shelf.grabbing{cursor:grabbing}
 .head{position:fixed;left:0;right:0;top:0;height:var(--head);z-index:6;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 max(16px,3vw);background:linear-gradient(var(--room) 55%,rgb(var(--room-rgb) / 0));pointer-events:none}
 .head h1{font:700 italic clamp(20px,3vw,30px)/1 var(--font-display);letter-spacing:.02em;color:var(--accent)}
@@ -56,9 +57,27 @@ html,body{height:100%;overflow:hidden;background:var(--room);color:var(--ink-sof
 .snd[aria-pressed=false]{opacity:.55}
 .shoplogo{height:1.1em;vertical-align:-.12em;margin-right:.45em}
 .head p{font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.6;text-align:right}
-.row{position:relative;height:var(--rowh,300px);scroll-snap-align:start;perspective:900px;perspective-origin:50% 22%;overflow:hidden;background:linear-gradient(var(--wall-a),var(--wall-b));box-shadow:inset 0 10px 18px -12px rgba(70,50,25,.3)}
+
+.row{position:relative;height:var(--hc,100px);transition:height var(--dur) var(--ease);cursor:pointer;perspective:900px;perspective-origin:50% 22%;overflow:hidden;background:linear-gradient(var(--wall-a),var(--wall-b));box-shadow:inset 0 10px 18px -12px rgba(70,50,25,.3)}
 .row::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;background:linear-gradient(90deg,rgb(var(--room-rgb) / .95),transparent 10%,transparent 90%,rgb(var(--room-rgb) / .95))}
+/* focus: one main shelf, the rest are quiet strips showing only the tops of the spines */
+.row.active{height:var(--ha,420px);cursor:grab}
+.row::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:rgb(var(--room-rgb) / .62);transition:opacity var(--dur) var(--ease),background .3s}
+.row.active::before{opacity:0}
+.row:not(.active):hover::before{background:rgb(var(--room-rgb) / .34)}
+.row:not(.active) .track{pointer-events:none;bottom:calc(14px - var(--shift,0px));transition:bottom var(--dur) var(--ease)}
+.row:not(.active):hover .track{bottom:calc(22px - var(--shift,0px))}
+.row.active .track{transition:bottom var(--dur) var(--ease)}
 .row.pending .track{visibility:hidden}
+.shelflabel{transition:all var(--dur) var(--ease),background .2s}
+.row.active .shelflabel{top:12px;background:transparent;border-color:transparent;padding:0;font:700 italic clamp(24px,3.2vw,38px)/1.05 var(--font-display);letter-spacing:0;text-transform:none;color:var(--accent-deep);cursor:pointer}
+.row.active .shelflabel:hover{background:transparent}
+.row.active .shelflabel i{font:500 var(--fs-label) var(--font-ui);letter-spacing:var(--track);opacity:.6;vertical-align:middle;margin-left:10px}
+.rail{position:fixed;right:max(12px,1.6vw);top:50%;transform:translateY(-50%);z-index:8;display:flex;flex-direction:column;gap:10px;align-items:center}
+.rail button{width:10px;height:10px;border-radius:50%;border:1px solid var(--accent);background:transparent;padding:0;cursor:pointer;transition:all .35s var(--ease)}
+.rail button.on{height:30px;border-radius:6px;background:var(--accent)}
+.hint{position:fixed;left:50%;bottom:max(10px,1.6vh);transform:translateX(-50%);z-index:8;font:500 var(--fs-label) var(--font-ui);letter-spacing:var(--track);text-transform:uppercase;color:var(--accent);opacity:.7;pointer-events:none;transition:opacity .6s}
+body.sheet-open .rail,body.sheet-open .hint{opacity:0;pointer-events:none}
 .shelflabel{position:absolute;left:max(16px,3vw);top:10px;z-index:5;background:var(--card);border:1px solid var(--line);color:var(--accent);border-radius:99px;padding:6px 13px;font:500 var(--fs-label) var(--font-ui);letter-spacing:.18em;text-transform:uppercase;cursor:pointer}
 .shelflabel i{font-style:normal;opacity:.7;margin-left:4px}
 .shelflabel:hover{background:var(--btn-hover)}
@@ -226,9 +245,11 @@ dt{letter-spacing:.18em;text-transform:uppercase;font-size:10px;opacity:.6;paddi
 <header class="head">
   <h1><img class="shoplogo" src="logo.png" alt="" hidden onload="this.hidden=false">The Endless Shelf</h1>
   <nav class="tabs" id="tabs" aria-label="Site"></nav>
-  <div class="hr"><p>drag · scroll · tap a spine</p><button id="snd" class="snd" type="button" aria-pressed="true">Sound on</button></div>
+  <div class="hr"><button id="snd" class="snd" type="button" aria-pressed="true">Sound on</button></div>
 </header>
 <main class="shelf" id="shelf" aria-label="Bookshelf"></main>
+<nav class="rail" id="rail" aria-label="Shelves"></nav>
+<div class="hint" id="hint">Scroll or press ↑ ↓ for the next shelf</div>
 <aside class="intro" id="intro"></aside>
 <section class="sheet" id="sheet" aria-hidden="true"><div class="sheet-in" id="sheet-in"></div></section>
 <div class="lamp"></div>
@@ -495,13 +516,18 @@ let u = 1, vel = 0, dragging = false, state = 'shelf';
 let pulledEl = null, ptr = null;
 
 const headPx = () => Math.max(56, innerHeight * .08);
-const rowHeight = () => (innerHeight - headPx()) / 3;
-let lastW = 0, lastH = 0;
+const bodyH = () => innerHeight - headPx();
+const activeH = () => Math.round(bodyH() * .6);
+const stripH = () => (bodyH() - activeH()) / 3;
+let lastW = 0, lastH = 0, activeIdx = 0, MORE = 4;
 function setMetrics(){
   lastW = innerWidth; lastH = innerHeight;
-  document.documentElement.style.setProperty('--head', headPx() + 'px');
-  document.documentElement.style.setProperty('--rowh', rowHeight() + 'px');
-  u = Math.max(.5, Math.min(1.25, (rowHeight() - 30) / (MAXH * 1.06)));
+  const root = document.documentElement.style;
+  root.setProperty('--head', headPx() + 'px');
+  root.setProperty('--ha', activeH() + 'px');
+  root.setProperty('--hc', stripH() + 'px');
+  u = Math.max(.5, Math.min(1.3, (activeH() - 78) / MAXH));
+  root.setProperty('--shift', Math.max(0, MAXH * u - (stripH() - 30)) + 'px');
 }
 function fillRow(row){
   row.track.textContent = '';
@@ -523,21 +549,45 @@ function fillRow(row){
   row.track.append(frag);
   row.off %= x; paint(row);
 }
-const io = new IntersectionObserver(es => es.forEach(e => {
-  const row = e.target._row; if (e.isIntersecting && row.el.classList.contains('pending')) enterRow(row);
-}), {root: shelf, threshold: .35});
+const stack = $('div', 'stack'); shelf.append(stack);
 function addRow(){
   const ri = rows.length, key = SEC_ORDER[ri % SEC_ORDER.length], sec = SECTIONS[key];
   const el = $('section', 'row pending'), track = $('div', 'track'), board = $('div', 'board');
   const lab = $('button', 'shelflabel', esc(sec.label) + (sec.intro ? ' <i>ⓘ</i>' : '')); lab.type = 'button';
-  lab.addEventListener('click', e => { e.stopPropagation(); showIntro(key); });
-  el.append(track, board, lab); shelf.append(el);
+  lab.addEventListener('click', e => { e.stopPropagation(); if (ri === activeIdx) showIntro(key); else goTo(ri); });
+  el.append(track, board, lab); stack.append(el);
   const row = {el, track, ri, key, f: FACTOR[ri % 3], W: 1, off: Math.random() * 600};
-  el._row = row; rows.push(row); fillRow(row); io.observe(el);
+  el._row = row; rows.push(row); fillRow(row);
 }
-function layout(){ setMetrics(); rows.forEach(row => { row.el.classList.remove('pending'); fillRow(row); }); }
-function maybeMore(){ while (shelf.scrollHeight - shelf.scrollTop - shelf.clientHeight < rowHeight() * 1.5) addRow(); }
-shelf.addEventListener('scroll', maybeMore, {passive:true});
+function layout(){ setMetrics(); rows.forEach(row => { row.el.classList.remove('pending'); fillRow(row); }); place(true); }
+/* the stack slides so the main shelf sits near the top with one strip above it and the rest below */
+function place(instant){
+  while (rows.length < activeIdx + MORE) addRow();
+  const hc = stripH(), ha = activeH(), above = activeIdx > 0 ? hc : 0;
+  stack.style.transition = instant ? 'none' : '';
+  stack.style.transform = `translateY(${above - activeIdx * hc}px)`;
+  rows.forEach(r => r.el.classList.toggle('active', r.ri === activeIdx));
+  rows.forEach(r => { if (r.el.classList.contains('pending') && r.ri >= activeIdx - 1 && r.ri <= activeIdx + 3) enterRow(r); });
+  buildRail();
+  if (instant) { stack.offsetHeight; stack.style.transition = ''; }
+}
+let navLock = 0;
+function goTo(i){
+  i = Math.max(0, i); if (i === activeIdx || state !== 'shelf') return;
+  const now = performance.now(); if (now - navLock < 520) return; navLock = now;
+  Snd.push(); setPulled(null, true); intro.classList.remove('show');
+  activeIdx = i; place(); document.getElementById('hint').style.opacity = '0';
+}
+const nextShelf = d => goTo(activeIdx + d);
+function buildRail(){
+  const rail = document.getElementById('rail'), n = Math.max(rows.length, activeIdx + 1);
+  if (rail.children.length !== SEC_ORDER.length) {
+    rail.textContent = '';
+    SEC_ORDER.forEach((k, i) => { const b = $('button'); b.type = 'button'; b.title = SECTIONS[k].label; b.setAttribute('aria-label', SECTIONS[k].label); b.addEventListener('click', () => { const cur = activeIdx % SEC_ORDER.length; goTo(activeIdx + ((i - cur + SEC_ORDER.length) % SEC_ORDER.length || (i === cur ? 0 : SEC_ORDER.length))); }); rail.append(b); });
+  }
+  [...rail.children].forEach((b, i) => b.classList.toggle('on', i === activeIdx % SEC_ORDER.length));
+}
+shelf.addEventListener('click', e => { const el = e.target.closest('.row'); if (el && moved <= 6 && !el.classList.contains('active') && !e.target.closest('.shelflabel')) goTo(el._row.ri); });
 
 // books of a shelf that just scrolled into view fly in at an angle, land leaning on the board, rock and stand upright
 const bookVars = el => [parseFloat(el.style.getPropertyValue('--z0')), parseFloat(el.style.getPropertyValue('--lean'))];
@@ -545,7 +595,7 @@ let lastShelve = 0;
 function enterRow(row){
   row.el.classList.remove('pending');
   if (reduce) return;
-  const H = row.el.clientHeight, vw = innerWidth, base = (row.ri % 3) * 90, now = performance.now();
+  const H = activeH(), vw = innerWidth, base = (row.ri % 3) * 90, now = performance.now();
   if (now - lastShelve > 500) { lastShelve = now; Snd.shelve(); }
   row.track.querySelectorAll('.book').forEach(el => {
     const r = el.getBoundingClientRect(); if (r.right < -80 || r.left > vw + 80) return;
@@ -561,7 +611,7 @@ function enterRow(row){
   });
 }
 const paint = row => { row.track.style.transform = `translate3d(${-row.off}px,0,0)`; };
-function move(dx){ rows.forEach(row => { row.off = ((row.off + dx * row.f) % row.W + row.W) % row.W; paint(row); }); }
+function move(dx){ rows.forEach(row => { row.off = ((row.off + dx * row.f * (row.ri === activeIdx ? 1 : .3)) % row.W + row.W) % row.W; paint(row); }); }
 
 let last = performance.now();
 (function tick(t){
@@ -584,9 +634,9 @@ addEventListener('pointermove', e => {
   if (!dragging && moved > 6 && Math.abs(dragX) > Math.abs(dragY)) { dragging = true; shelf.classList.add('grabbing'); }
   if (dragging) { move(-dx); vel = vel * .6 + (-dx / dtm * 1000) * .4; }
 });
-const endDrag = () => { down = false; dragging = false; shelf.classList.remove('grabbing'); };
+const endDrag = () => { if (down && !dragging && state === 'shelf' && Math.abs(dragY) > 50 && Math.abs(dragY) > Math.abs(dragX)) nextShelf(dragY < 0 ? 1 : -1); down = false; dragging = false; shelf.classList.remove('grabbing'); };
 addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
-addEventListener('wheel', e => { if (state !== 'shelf') return; if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) vel = Math.max(-2600, Math.min(2600, vel + e.deltaX * 4)); }, {passive:true});   // vertical wheel scrolls the shelves natively
+addEventListener('wheel', e => { if (state !== 'shelf') return; if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) vel = Math.max(-2600, Math.min(2600, vel + e.deltaX * 4)); else if (Math.abs(e.deltaY) > 8) nextShelf(e.deltaY > 0 ? 1 : -1); }, {passive:true});   // vertical wheel: next / previous shelf
 /* hover: the book slides out and turns its cover towards you; click opens it */
 function setPulled(el, silent){
   if (pulledEl === el) return;
@@ -614,8 +664,9 @@ shelf.addEventListener('keydown', e => {
   const el = e.target.closest && e.target.closest('.book');
   if ((e.key === 'Enter' || e.key === ' ') && el) { e.preventDefault(); openBook(el); }
   if (e.key === 'ArrowRight') vel += 700; if (e.key === 'ArrowLeft') vel -= 700;
+  if (e.key === 'ArrowDown') { e.preventDefault(); nextShelf(1); } if (e.key === 'ArrowUp') { e.preventDefault(); nextShelf(-1); }
 });
-let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (state === 'shelf' && (Math.abs(innerWidth - lastW) > 1 || Math.abs(innerHeight - lastH) > 1)) { layout(); maybeMore(); } }, 150); });   // ignore no-op resizes: a rebuild would throw away running fly-in animations
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (state === 'shelf' && (Math.abs(innerWidth - lastW) > 1 || Math.abs(innerHeight - lastH) > 1)) { layout(); } }, 150); });   // ignore no-op resizes: a rebuild would throw away running fly-in animations
 
 /* ------------------------------------------------------------------ pull out → turn → ink */
 let ctx = null;
@@ -795,12 +846,12 @@ function openSheet(key){
   Snd.push(); setPulled(null, true); intro.classList.remove('show');
   sheetIn.innerHTML = sheetHTML(SITE[key]); sheet.scrollTop = 0;
   sheet.classList.add('show'); sheet.setAttribute('aria-hidden', 'false');
-  sheetKey = key; state = 'sheet'; setTab(key);
+  sheetKey = key; state = 'sheet'; setTab(key); document.body.classList.add('sheet-open');
 }
 function closeSheet(){
   if (!sheetKey) return;
   sheet.classList.remove('show'); sheet.setAttribute('aria-hidden', 'true');
-  sheetKey = null; state = 'shelf'; setTab('shelves');
+  sheetKey = null; state = 'shelf'; setTab('shelves'); document.body.classList.remove('sheet-open');
 }
 [['shelves', 'Shelves'], ['about', 'About'], ['contact', 'Contact']].forEach(([k, label]) => {
   const t = $('button', 'tab', label); t.type = 'button'; t.dataset.k = k;
@@ -819,8 +870,7 @@ function showIntro(key){
 }
 intro.addEventListener('click', () => intro.classList.remove('show'));
 setMetrics();
-for (let i = 0; i < 4; i++) addRow();
-maybeMore();
+place(true);
 })();
 </script>
 </body>

@@ -11,3 +11,6 @@ python3 -m http.server 8000   # then open http://localhost:8000/
 - About / Contact copy: the `SITE` object in the script. The current text is placeholder.
 - Book data: the `BOOKS` array; shelves: `SECTIONS` + `SEC_ORDER`.
 - Optional `logo.png` next to `index.html` appears in the header.
+
+## Focus model (UX)
+One shelf is the **main** shelf (60% of the viewport, full colour, big title). The others are quiet strips that show only the tops of the spines and are dimmed. Wheel, ↑/↓, vertical swipe, the dots on the right, or a click on a strip makes another shelf the main one (the stack slides, strips grow/shrink with the same easing). Tuning: `activeH()` / `stripH()` and `--dur`, `--ease` in `:root`.

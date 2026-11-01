@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Endless Shelf</title>
+<meta name="description" content="An endless shelf of worn books. Pull a spine, turn the book to its cover, open it and watch the page spread like ink.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500;1,700&family=Oswald:wght@400;600&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* ---- design tokens: colour ---- */
+  --room:#e0d7c6; --room-rgb:224 215 198;          /* page background */
+  --wall-a:#e4dbca; --wall-b:#d1c5ad;               /* back of a shelf */
+  --board-a:#c6b690; --board-b:#ad9971;             /* shelf board */
+  --paper:#f0e6d0;                                  /* book page / sheets */
+  --card:var(--card);                     /* floating cards */
+  --btn:var(--btn); --btn-hover:#fff;     /* pills */
+  --ink:#2a1d12; --ink-soft:#3b2d1c;                /* text */
+  --accent:#6b4f2a; --accent-deep:#4a3418;          /* bronze accent (headings, rules, labels) */
+  --line:rgba(107,79,42,.3);                        /* hairlines & pill borders */
+  /* ---- design tokens: type ---- */
+  --font-ui:'Poppins',system-ui,sans-serif;                 /* labels, buttons, small print */
+  --font-display:'Cormorant Garamond',Georgia,serif;        /* wordmark, leads, body copy */
+  --font-heading:'Playfair Display',Georgia,serif;          /* titles */
+  --font-condensed:'Oswald','Arial Narrow',sans-serif;      /* book-spine artwork only */
+  --fs-label:10px; --fs-ui:11px; --track:.18em;
+  /* ---- shape ---- */
+  --r-pill:99px; --r-card:14px; --shadow-card:0 12px 40px rgba(60,40,15,.22);
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.1 -.25'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --paper-grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35  0 0 0 0 .25  0 0 0 0 .12  0 0 0 .55 -.18'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --head:60px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--room);color:var(--ink-soft);font-family:var(--font-ui);-webkit-font-smoothing:antialiased}
+
+/* ---------- room ---------- */
+.shelf{position:fixed;left:0;right:0;bottom:0;top:var(--head);overflow-y:auto;overflow-x:hidden;scroll-snap-type:y proximity;scrollbar-width:none;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab}
+.shelf::-webkit-scrollbar{display:none}
+.shelf.grabbing{cursor:grabbing}
+.head{position:fixed;left:0;right:0;top:0;height:var(--head);z-index:6;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 max(16px,3vw);background:linear-gradient(var(--room) 55%,rgb(var(--room-rgb) / 0));pointer-events:none}
+.head h1{font:700 italic clamp(20px,3vw,30px)/1 var(--font-display);letter-spacing:.02em;color:var(--accent)}
+.tabs{display:flex;gap:6px;pointer-events:auto}
+.tab{background:transparent;color:var(--accent);border:1px solid transparent;border-radius:99px;padding:8px 16px;font:500 var(--fs-ui) var(--font-ui);letter-spacing:.16em;text-transform:uppercase;cursor:pointer;transition:background .2s,border-color .2s}
+.tab:hover{background:rgba(255,255,255,.5)}
+.tab[aria-selected=true]{background:var(--btn-hover);border-color:rgba(107,79,42,.3)}
+.intro{position:fixed;z-index:7;left:50%;top:calc(var(--head) + 14px);width:min(680px,calc(100vw - 32px));transform:translate(-50%,-8px);padding:18px 22px;border-radius:14px;background:var(--card);color:var(--ink-soft);box-shadow:var(--shadow-card);opacity:0;pointer-events:none;transition:opacity .5s,transform .5s}
+.intro.show{opacity:1;transform:translate(-50%,0);pointer-events:auto;cursor:pointer}
+.intro b{display:block;font:700 italic 24px/1.1 var(--font-display);color:var(--accent);margin-bottom:2px}
+.intro i{display:block;font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.6;margin-bottom:8px;font-style:normal}
+.intro p{font:500 16px/1.5 var(--font-display)}
+.hr{display:flex;align-items:center;gap:18px}
+.snd{pointer-events:auto;background:var(--btn);color:var(--accent);border:1px solid var(--line);border-radius:99px;padding:7px 14px;font:500 var(--fs-label) var(--font-ui);letter-spacing:.18em;text-transform:uppercase;cursor:pointer}
+.snd:hover{background:var(--btn-hover)}
+.snd[aria-pressed=false]{opacity:.55}
+.shoplogo{height:1.1em;vertical-align:-.12em;margin-right:.45em}
+.head p{font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.6;text-align:right}
+.row{position:relative;height:var(--rowh,300px);scroll-snap-align:start;perspective:900px;perspective-origin:50% 22%;overflow:hidden;background:linear-gradient(var(--wall-a),var(--wall-b));box-shadow:inset 0 10px 18px -12px rgba(70,50,25,.3)}
+.row::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;background:linear-gradient(90deg,rgb(var(--room-rgb) / .95),transparent 10%,transparent 90%,rgb(var(--room-rgb) / .95))}
+.row.pending .track{visibility:hidden}
+.shelflabel{position:absolute;left:max(16px,3vw);top:10px;z-index:5;background:var(--card);border:1px solid var(--line);color:var(--accent);border-radius:99px;padding:6px 13px;font:500 var(--fs-label) var(--font-ui);letter-spacing:.18em;text-transform:uppercase;cursor:pointer}
+.shelflabel i{font-style:normal;opacity:.7;margin-left:4px}
+.shelflabel:hover{background:var(--btn-hover)}
+.track{position:absolute;left:0;bottom:14px;width:0;height:0;transform-style:preserve-3d;will-change:transform}
+.board{position:absolute;left:0;right:0;bottom:0;height:16px;z-index:3;background:linear-gradient(var(--board-a),var(--board-b));box-shadow:inset 0 2px 0 rgba(255,255,255,.5),0 5px 12px rgba(70,50,25,.25)}
+.lamp{display:none}
+.vignette{display:none}
+
+/* ---------- book (3D box: spine faces the viewer) ---------- */
+.book{position:absolute;transform-style:preserve-3d;transform-origin:50% 50% 0;outline:none}
+.track .book{transform-origin:50% 100% 0;transform:translateZ(var(--z0)) rotateZ(var(--lean));transition:transform .5s cubic-bezier(.2,.8,.2,1);cursor:pointer}
+.track .book.pulled{transform:translateZ(var(--z1)) rotateY(-90deg)}
+/* resting books show only their spine: side faces of neighbours overlap and z-fight (the shimmer) */
+.track .back{display:none}
+.track .book .leaf{visibility:hidden;transition:visibility 0s .5s}
+.track .book.pulled .leaf{visibility:visible;transition-delay:0s}
+.face{position:absolute;left:0;top:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+.face>*{position:absolute}
+
+/* spine */
+.spine{--es:var(--ac);--ea:var(--ac);background:linear-gradient(180deg,var(--c1),var(--c2))}
+.spine::before{content:"";position:absolute;inset:0;background:var(--grain);opacity:.14}
+.spine::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,rgba(0,0,0,.28),rgba(255,255,255,.12) 22%,rgba(255,255,255,0) 50%,rgba(0,0,0,.12) 84%,rgba(0,0,0,.3));
+  box-shadow:inset 0 6px 7px -6px rgba(255,255,255,.35),inset 0 -6px 8px -6px rgba(0,0,0,.35)}
+.band{left:0;right:0;height:max(1px,calc(var(--u)*2));background:var(--ac)}
+.t1{top:4%}.t2{top:6.5%}.b1{bottom:6.5%}.b2{bottom:4%}
+.blk{display:none;left:0;right:0;top:0;height:21%;background:var(--ac)}
+.emb{left:50%;top:11%;width:min(72%,calc(var(--u)*26));aspect-ratio:1;transform:translateX(-50%)}
+.st{left:50%;top:27%;height:62%;transform:translateX(-50%);writing-mode:vertical-rl;text-align:center;white-space:nowrap;line-height:1}
+.scuff{border-radius:50%;background:radial-gradient(ellipse,rgba(255,238,205,.4),rgba(255,238,205,0) 70%);pointer-events:none}
+.v-classic .st{color:var(--ac)}
+.v-modern{--es:var(--c2);--ea:var(--c1)}
+.v-modern .blk{display:block}.v-modern .t1,.v-modern .t2{display:none}
+.v-modern .emb{top:3%}
+.v-modern .st{color:var(--fg)}
+.v-cream{background:linear-gradient(180deg,#f8edc0,#ead99a);--es:var(--ac);--ea:var(--c1)}
+.v-cream .band{background:var(--c1)}
+.v-cream .st{color:var(--ac)}
+.v-cream::before{opacity:.12}
+.v-light{background:linear-gradient(180deg,#f1e6cc,#d8c9a4);--es:var(--c1);--ea:var(--c2)}
+.v-light .band{background:var(--c1)}
+.v-light .st{color:var(--c2)}
+.v-light::before{opacity:.12}
+
+.f-serif{font-family:var(--font-heading);font-weight:800}
+.f-cond{font-family:var(--font-condensed);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.f-ital{font-family:var(--font-display);font-style:italic;font-weight:700}
+
+.emblem svg{width:100%;height:100%;display:block;overflow:visible}
+.emblem .s{fill:none;stroke:var(--es);stroke-width:3.4;stroke-linecap:round}
+.emblem .a{fill:var(--ea)}
+.emblem .f{fill:var(--es)}
+
+/* cover */
+.cover{--es:var(--ac);--ea:var(--ac);color:var(--fg);background:linear-gradient(135deg,var(--c1),var(--c2));display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;padding:calc(var(--u)*22) calc(var(--u)*20) calc(var(--u)*20)}
+.cover>*{position:relative}
+.cover::before{content:"";position:absolute;inset:0;background:var(--grain);opacity:.16}
+.cover::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(0,0,0,.4) 0,rgba(0,0,0,0) 2.2%,rgba(255,255,255,.1) 4.2%,rgba(0,0,0,.28) 6%,rgba(0,0,0,0) 9.5%),
+    linear-gradient(160deg,rgba(255,255,255,.12),rgba(255,255,255,0) 35%,rgba(0,0,0,.22) 100%);
+  box-shadow:inset 0 0 calc(var(--u)*8) rgba(0,0,0,.3),inset 0 0 0 calc(var(--u)*1) rgba(255,255,255,.15)}
+.frame{position:absolute!important;inset:calc(var(--u)*11);border:calc(var(--u)*1.3) solid var(--ac);opacity:.75}
+.frame::after{content:"";position:absolute;inset:calc(var(--u)*3);border:calc(var(--u)*.6) solid var(--ac);opacity:.7}
+.cover.art{background-size:100% 100%;background-position:center}
+.cover.art::before{opacity:0}
+.cover.art::after{box-shadow:inset 0 0 calc(var(--u)*5) rgba(0,0,0,.22)}
+.c-top{font-size:calc(var(--u)*8.5);letter-spacing:.24em;text-transform:uppercase;opacity:.88;font-weight:500}
+.c-emb{width:calc(var(--u)*62);height:calc(var(--u)*62)}
+.c-title{font-size:calc(var(--u)*19);line-height:1.04;color:var(--fg)}
+.c-title.f-cond{font-size:calc(var(--u)*21)}
+.c-title.f-ital{font-size:calc(var(--u)*27)}
+.c-foot{font-size:calc(var(--u)*7.2);letter-spacing:.3em;text-transform:uppercase;opacity:.7}
+
+/* back / top / fore-edge */
+.back{background:linear-gradient(135deg,var(--c2),var(--c1))}
+.back::before{content:"";position:absolute;inset:0;background:var(--grain);opacity:.14}
+.topf{background:
+  repeating-linear-gradient(0deg,#e6dabb 0 1px,#cdbf9a 1px 2px);
+  border:0 solid var(--c2);border-left-width:calc(var(--u)*2.5);border-right-width:calc(var(--u)*2.5);border-bottom-width:calc(var(--u)*7)}
+.topf::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,0) 40%);}
+.pgs{background:repeating-linear-gradient(0deg,#e9dec1 0 1px,#cfc19d 1px 2px);box-shadow:inset 0 0 0 calc(var(--u)*2.5) var(--c2)}
+
+/* ---------- stage (pulled-out book) ---------- */
+.stage{position:fixed;inset:0;z-index:50;perspective:1600px;perspective-origin:50% 45%;overflow:hidden}
+.dim{position:absolute;inset:0;background:rgba(243,238,229,.9);opacity:0;transition:opacity .35s;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.stage.on .dim{opacity:1}
+.glow{position:absolute;inset:0;opacity:0;transition:opacity 1.2s .3s;background:radial-gradient(ellipse 42% 52% at 50% 46%,var(--glow),transparent 70%)}
+.stage.on .glow{opacity:.22}
+.mover{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d}
+.tilt{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d;transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+.caption{position:absolute;left:0;right:0;bottom:calc(4.5vh + env(safe-area-inset-bottom));text-align:center;opacity:0;transform:translateY(12px);transition:opacity .7s,transform .7s;pointer-events:none;padding:0 16px}
+.caption.show{opacity:1;transform:none}
+.caption b{display:block;font:700 italic clamp(20px,3vw,30px)/1.1 var(--font-display);color:var(--accent);margin-bottom:6px}
+.caption span{font-size:11px;letter-spacing:.22em;text-transform:uppercase;opacity:.6}
+.x{position:absolute;z-index:20;top:max(14px,env(safe-area-inset-top));right:max(14px,3vw);background:var(--btn);color:var(--ink-soft);border:1px solid var(--line);border-radius:99px;padding:9px 18px;font:500 var(--fs-ui) var(--font-ui);letter-spacing:.18em;text-transform:uppercase;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:background .2s}
+.x:hover{background:var(--btn-hover)}
+.x.dark{background:rgba(240,230,208,.7);color:var(--ink);border-color:rgba(42,29,18,.4)}
+
+/* ---------- hinged cover + page ---------- */
+.leaf{position:absolute;transform-style:preserve-3d}
+.hinge{position:absolute;inset:0;transform-style:preserve-3d;transform-origin:0 50% 0}
+.liner{transform:rotateY(180deg);background:radial-gradient(circle,rgba(255,255,255,.1) 1px,transparent 1.6px) 0 0/calc(var(--u)*9) calc(var(--u)*9),linear-gradient(135deg,var(--c2),var(--c1))}
+.liner::after{content:"";position:absolute;inset:0;background:linear-gradient(270deg,rgba(0,0,0,.35),transparent 14%)}
+.firstpage{transform:translateZ(-2px);background:var(--paper) var(--paper-grain)}
+.firstpage::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(60,40,15,.3),transparent 13%)}
+.page{position:absolute;inset:0;z-index:12;overflow:auto;opacity:0;pointer-events:none;transition:opacity .5s;color:var(--ink);background:var(--paper) var(--paper-grain)}
+.page.show{opacity:1;pointer-events:auto}
+.pg{position:relative;max-width:1120px;margin:0 auto;padding:max(11vh,76px) max(24px,6vw) 9vh;display:grid;grid-template-columns:1fr 1.15fr;gap:clamp(24px,5vw,72px);align-items:start}
+.ghost{position:absolute;right:2vw;top:4vh;font:800 clamp(220px,40vw,520px)/.8 var(--font-heading);color:var(--accent);opacity:.07;pointer-events:none}
+.rise{opacity:0;transform:translateY(26px);transition:opacity .8s,transform .9s cubic-bezier(.2,.7,.2,1)}
+.page.show .rise{opacity:1;transform:none;transition-delay:calc(var(--i)*90ms + 120ms)}
+.kicker{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:18px}
+.pg h2{font:800 clamp(38px,6vw,84px)/.98 var(--font-heading);color:var(--ink);margin-bottom:18px;letter-spacing:-.01em}
+.by{font:italic 500 clamp(20px,2.2vw,26px)/1.2 var(--font-display);margin-bottom:28px}
+.rule{height:2px;width:72px;background:var(--accent);margin-bottom:24px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:8px 20px;font-size:13px}
+dt{letter-spacing:.18em;text-transform:uppercase;font-size:10px;opacity:.6;padding-top:3px}
+.blurb{font:italic 500 clamp(22px,2.6vw,32px)/1.25 var(--font-display);color:var(--accent-deep);margin-bottom:34px}
+.chap{font-size:11px;letter-spacing:.3em;text-transform:uppercase;margin-bottom:14px;opacity:.7}
+.excerpt{font:500 clamp(17px,1.6vw,20px)/1.7 var(--font-display)}
+.excerpt::first-letter{float:left;font:800 4.4em/.78 var(--font-heading);padding:.08em .1em 0 0;color:var(--accent)}
+.end{margin-top:30px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;opacity:.55}
+
+/* ---------- one pill style for every button ---------- */
+.tab,.snd,.shelflabel,.x{font:500 var(--fs-ui)/1 var(--font-ui);letter-spacing:var(--track);text-transform:uppercase;color:var(--accent);background:var(--btn);border:1px solid var(--line);border-radius:var(--r-pill);padding:8px 16px;cursor:pointer;transition:background .2s,border-color .2s}
+.tab{background:transparent;border-color:transparent}
+.tab:hover,.snd:hover,.shelflabel:hover,.x:hover{background:var(--btn-hover)}
+.tab[aria-selected=true]{background:var(--btn-hover);border-color:var(--line)}
+.x{color:var(--ink-soft);padding:9px 18px}
+
+/* ---------- sheets: About / Contact (same paper as a book page) ---------- */
+.sheet{position:fixed;left:0;right:0;bottom:0;top:var(--head);z-index:40;overflow:auto;background:var(--paper) var(--paper-grain);color:var(--ink);opacity:0;visibility:hidden;transform:translateY(24px);transition:opacity .45s,transform .55s cubic-bezier(.2,.7,.2,1),visibility 0s .55s}
+.sheet.show{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+.sheet-in{position:relative;max-width:1120px;margin:0 auto;padding:clamp(32px,7vh,72px) max(24px,6vw) 10vh}
+.sheet h2{font:800 clamp(38px,6vw,84px)/.98 var(--font-heading);color:var(--ink);margin-bottom:18px;letter-spacing:-.01em}
+.sheet .blurb{max-width:760px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:22px;margin-top:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:24px 24px 22px}
+.card h3{font:700 italic 26px/1.1 var(--font-display);color:var(--accent);margin-bottom:12px}
+.card p,.card li{font:500 17px/1.6 var(--font-display);color:var(--ink)}
+.card ul{list-style:none}
+.card li+li{margin-top:4px}
+.card a{color:var(--accent);text-decoration-color:var(--line);text-underline-offset:3px}
+.card dl{margin-top:2px}
+.card dd{font:500 17px/1.5 var(--font-display)}
+.sheet .note{margin-top:30px;max-width:760px;font:500 var(--fs-ui)/1.7 var(--font-ui);letter-spacing:.06em;color:var(--accent);opacity:.8}
+.cta{display:inline-block;margin-top:28px;text-decoration:none;font:500 var(--fs-ui)/1 var(--font-ui);letter-spacing:var(--track);text-transform:uppercase;color:var(--paper);background:var(--accent);border-radius:var(--r-pill);padding:14px 26px;transition:background .2s}
+.cta:hover{background:var(--accent-deep)}
+
+@media (max-width:760px){
+  .pg{grid-template-columns:1fr}
+  .head p{display:none}
+  .tab{padding:8px 10px}
+}
+@media (prefers-reduced-motion:reduce){
+  .rise{transition-duration:.01s}
+}
+</style>
+</head>
+<body>
+
+
+<header class="head">
+  <h1><img class="shoplogo" src="logo.png" alt="" hidden onload="this.hidden=false">The Endless Shelf</h1>
+  <nav class="tabs" id="tabs" aria-label="Site"></nav>
+  <div class="hr"><p>drag · scroll · tap a spine</p><button id="snd" class="snd" type="button" aria-pressed="true">Sound on</button></div>
+</header>
+<main class="shelf" id="shelf" aria-label="Bookshelf"></main>
+<aside class="intro" id="intro"></aside>
+<section class="sheet" id="sheet" aria-hidden="true"><div class="sheet-in" id="sheet-in"></div></section>
+<div class="lamp"></div>
+<div class="vignette"></div>
+
+<script>
+(() => {
+'use strict';
+const D = 150;                       // default book depth (cover width) in base units
+const MAXH = 262;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ------------------------------------------------------------------ data */
+const BOOKS = [
+ {"title": "The Poison Daughter", "short": "The Poison Daughter", "author": "Sheila Masterson", "w": 44, "h": 238, "c1": "#2a1b4a", "c2": "#100a22", "fg": "#f3e6f0", "ac": "#e9b4d6", "pat": "moon", "variant": "classic", "font": "serif", "img": "covers/the-poison-daughter.jpg", "blurb": "Kill him with a kiss.", "note": "The global phenomenon"},
+ {"title": "Seven and the Swift", "short": "Seven and the Swift", "author": "Devney Perry", "w": 36, "h": 226, "c1": "#4a1220", "c2": "#14060b", "fg": "#f4ece6", "ac": "#f4ece6", "pat": "eye", "variant": "modern", "font": "cond", "img": "covers/seven-and-the-swift.jpg", "kicker": "Foyles Exclusive", "blurb": "Fight for the moment you love…", "note": "#1 New York Times bestselling author"},
+ {"title": "Crown Me Dead", "short": "Crown Me Dead", "author": "Liv Zander", "w": 42, "h": 242, "c1": "#3f2152", "c2": "#150b1c", "fg": "#efe2c0", "ac": "#e8d6a6", "pat": "tri", "variant": "classic", "font": "serif", "img": "covers/crown-me-dead.jpg", "kicker": "Foyles Exclusive", "blurb": "The international sensation."},
+ {"title": "Crown Me Yours", "short": "Crown Me Yours", "author": "Liv Zander", "w": 50, "h": 250, "c1": "#552040", "c2": "#1a0a14", "fg": "#efe2c0", "ac": "#e8d6a6", "pat": "tri", "variant": "classic", "font": "serif", "img": "covers/crown-me-yours.jpg", "kicker": "Foyles Exclusive", "blurb": "The international sensation."},
+ {"title": "Fourth Wing", "short": "Fourth Wing", "author": "Rebecca Yarros", "w": 70, "h": 258, "c1": "#221b10", "c2": "#0a0805", "fg": "#f1dfae", "ac": "#e9c46a", "pat": "rings", "variant": "classic", "font": "serif", "img": "covers/fourth-wing.jpg", "blurb": "Discover the thrilling must-read global phenomenon.", "note": "The number one bestselling author"},
+ {"title": "Threshing Day", "short": "Threshing Day", "author": "Rebecca Yarros", "w": 58, "h": 236, "c1": "#8c939c", "c2": "#161616", "fg": "#161616", "ac": "#161616", "pat": "grid", "variant": "light", "font": "cond", "img": "covers/threshing-day.jpg", "kicker": "The Empyrean Series", "blurb": "Thirteen unforgettable stories. One legendary day. The bond that changes everything."},
+ {"title": "Bury Our Bones in the Midnight Soil", "short": "Bury Our Bones", "author": "V. E. Schwab", "w": 34, "h": 230, "c1": "#220a10", "c2": "#070203", "fg": "#f6d94e", "ac": "#f6d94e", "pat": "sun", "variant": "classic", "font": "cond", "img": "covers/bury-our-bones.jpg", "blurb": "The No. 1 international bestseller."},
+ {"title": "A Court of Splintered Harmony", "short": "Splintered Harmony", "author": "Sarah J. Maas", "w": 66, "h": 252, "c1": "#e8467c", "c2": "#f48a3c", "fg": "#ffffff", "ac": "#ffffff", "pat": "sun", "variant": "modern", "font": "serif", "img": "covers/court-of-splintered-harmony.jpg", "kicker": "The Valkyrie Cycle", "blurb": "#1 bestselling global phenomenon.", "note": "Movement I", "pg1": "#d6336c", "pg2": "#7a1d3f"},
+ {"title": "A Court of Forgotten Melody", "short": "Forgotten Melody", "author": "Sarah J. Maas", "w": 62, "h": 248, "c1": "#17a398", "c2": "#0d6c68", "fg": "#ffffff", "ac": "#ffffff", "pat": "waves", "variant": "modern", "font": "serif", "img": "covers/court-of-forgotten-melody.jpg", "kicker": "The Valkyrie Cycle", "blurb": "#1 bestselling global phenomenon.", "note": "Movements II & III", "pg1": "#128078", "pg2": "#0a403d"},
+ {"title": "The Mirror of Infinite Endings", "short": "Infinite Endings", "author": "Stephanie Garber", "w": 54, "h": 244, "c1": "#d9a2c8", "c2": "#7b3b7a", "fg": "#7b3b7a", "ac": "#7b3b7a", "pat": "moon", "variant": "light", "font": "ital", "img": "covers/mirror-of-infinite-endings.jpg", "blurb": "A Sunday Times bestselling author."},
+ {"title": "Dungeon Crawler Carl", "short": "Dungeon Crawler Carl", "author": "Matt Dinniman", "w": 74, "h": 240, "c1": "#16120f", "c2": "#050403", "fg": "#f6cf2e", "ac": "#f6cf2e", "pat": "eye", "variant": "classic", "font": "cond", "img": "covers/dungeon-crawler-carl.jpg", "blurb": "The multi-million bestseller. “Legit awesome” — Brandon Sanderson.", "facts": [["Edition", "Paperback"], ["Published", "1 Oct 2026"], ["Price", "£10.99"]]},
+ {"title": "Project Hail Mary", "short": "Project Hail Mary", "author": "Andy Weir", "w": 52, "h": 236, "c1": "#13203f", "c2": "#060b1a", "fg": "#f4efe6", "ac": "#f4efe6", "pat": "rings", "variant": "classic", "font": "cond", "img": "covers/project-hail-mary.jpg", "blurb": "Now a major motion picture starring Ryan Gosling.", "note": "From the author of The Martian"},
+ {"title": "There Is No Antimemetics Division", "short": "No Antimemetics Division", "author": "qntm", "w": 30, "h": 214, "c1": "#12525c", "c2": "#0a2e36", "fg": "#d9f23c", "ac": "#d9f23c", "pat": "tri", "variant": "classic", "font": "cond", "img": "covers/there-is-no-antimemetics-division.jpg", "blurb": "“Astounding” — M. R. Carey. “Utterly unique” — Blake Crouch."},
+ {"title": "A Short Stay in Hell", "short": "A Short Stay in Hell", "author": "Steven L. Peck", "w": 24, "h": 206, "c1": "#8a6a46", "c2": "#2b1d10", "fg": "#2b1d10", "ac": "#2b1d10", "pat": "grid", "variant": "light", "font": "serif", "img": "covers/a-short-stay-in-hell.jpg"},
+ {"title": "Life Out of Order", "short": "Life Out of Order", "author": "Audrey Niffenegger", "w": 46, "h": 232, "c1": "#13919c", "c2": "#0a5f6b", "fg": "#ffffff", "ac": "#d7f23a", "pat": "bird", "variant": "modern", "font": "cond", "img": "covers/life-out-of-order.jpg", "kicker": "Signed Edition", "blurb": "Sequel to The Time Traveler’s Wife.", "facts": [["Format", "Hardback"], ["Published", "13 Oct 2026"], ["Price", "£22.00"]]},
+ {"title": "The Discworld Bestiary", "short": "Discworld Bestiary", "author": "Terry Pratchett", "w": 78, "h": 214, "c1": "#40718f", "c2": "#233f56", "fg": "#f3e6d0", "ac": "#e08a3e", "pat": "eye", "variant": "classic", "font": "serif", "img": "covers/discworld-bestiary.jpg", "kicker": "Signed Bookplate Edition", "blurb": "From the world of Terry Pratchett, illustrated by Paul Kidby.", "facts": [["Format", "Hardback"], ["Published", "15 Oct 2026"], ["Price", "£30.00"]], "d": 165},
+ {"title": "The Correspondent", "short": "The Correspondent", "author": "Virginia Evans", "w": 38, "h": 224, "c1": "#ee9a98", "c2": "#f7ebb9", "fg": "#b3121a", "ac": "#c4161c", "pat": "rings", "variant": "cream", "font": "serif", "img": "covers/the-correspondent.jpg", "pg1": "#c4161c", "pg2": "#6f0b10", "kicker": "Women’s Prize for Fiction winner 2026", "blurb": "The international number one bestseller. “A warm, funny gem of a novel” — The Times.", "facts": [["Format", "Paperback"], ["Published", "11 Jun 2026"], ["Price", "£9.99"]]},
+ {"title": "East of Eden", "short": "East of Eden", "author": "John Steinbeck", "w": 56, "h": 222, "c1": "#9db8b0", "c2": "#3f5f59", "fg": "#233b37", "ac": "#233b37", "pat": "sun", "variant": "light", "font": "serif", "img": "covers/east-of-eden.jpg", "kicker": "Penguin Modern Classics"},
+ {"title": "White Nights", "short": "White Nights", "author": "Fyodor Dostoyevsky", "w": 18, "h": 190, "c1": "#101010", "c2": "#000000", "fg": "#ffffff", "ac": "#f2f2f2", "pat": "moon", "variant": "classic", "font": "serif", "img": "covers/white-nights.jpg", "kicker": "Penguin Little Black Classics · No. 118"},
+ {"title": "The Things We Never Say", "short": "Things We Never Say", "author": "Elizabeth Strout", "w": 48, "h": 240, "c1": "#8fb2c7", "c2": "#2f5167", "fg": "#ffffff", "ac": "#ffffff", "pat": "grid", "variant": "modern", "font": "serif", "img": "covers/the-things-we-never-say.jpg", "blurb": "The instant Sunday Times bestseller."},
+ {"title": "Klara and the Sun", "short": "Klara and the Sun", "author": "Kazuo Ishiguro", "w": 44, "h": 236, "c1": "#e8573a", "c2": "#b23a22", "fg": "#fff4e6", "ac": "#f4b53a", "pat": "sun", "variant": "classic", "font": "cond", "img": "covers/klara-and-the-sun.jpg", "blurb": "The #1 Sunday Times bestseller.", "note": "Winner of the Nobel Prize in Literature", "pg1": "#c94428", "pg2": "#6d1f10"},
+ {"title": "The Wax Child", "short": "The Wax Child", "author": "Olga Ravn", "w": 28, "h": 222, "c1": "#2f5a45", "c2": "#122619", "fg": "#f1ece0", "ac": "#ff5a2a", "pat": "eye", "variant": "classic", "font": "cond", "img": "covers/the-wax-child.jpg", "note": "Translated by Martin Aitken", "pg1": "#c43c14", "pg2": "#12301f"},
+ {"title": "Red Rising", "short": "Red Rising", "author": "Pierce Brown", "w": 64, "h": 246, "c1": "#1c0c0f", "c2": "#050203", "fg": "#ffffff", "ac": "#d6202f", "pat": "bird", "variant": "classic", "font": "cond", "img": "covers/red-rising.jpg", "kicker": "Red Rising · Book 1", "blurb": "#1 New York Times bestselling author.", "pg1": "#b01826", "pg2": "#2a0a0e"},
+ {"title": "What We Can Know", "short": "What We Can Know", "author": "Ian McEwan", "w": 40, "h": 234, "c1": "#0e2c36", "c2": "#06161c", "fg": "#f4f1e6", "ac": "#f2e23a", "pat": "waves", "variant": "classic", "font": "cond", "img": "covers/what-we-can-know.jpg", "blurb": "“Full of wisdom and heart. I loved it” — Elif Shafak.", "note": "The Sunday Times bestseller", "pg1": "#0e5a6e", "pg2": "#0a2a34"},
+ {"title": "Shadow Ticket", "short": "Shadow Ticket", "author": "Thomas Pynchon", "w": 72, "h": 256, "c1": "#241c15", "c2": "#0a0806", "fg": "#f2e6d2", "ac": "#e8963a", "pat": "rings", "variant": "classic", "font": "serif", "img": "covers/shadow-ticket.jpg", "blurb": "“A masterpiece… so alive, so pleasurable” — Daily Telegraph.", "note": "The New York Times bestseller", "pg1": "#b8641c", "pg2": "#2a1d12"},
+ {"title": "Fruit Fly", "short": "Fruit Fly", "author": "Josh Silver", "w": 34, "h": 226, "c1": "#b8f02a", "c2": "#86c910", "fg": "#14210a", "ac": "#ee6a14", "pat": "sun", "variant": "modern", "font": "cond", "img": "covers/fruit-fly.jpg", "blurb": "“An incredible book.” — Russell T Davies. “Savage and darkly hilarious.” — Juno Dawson.", "pg1": "#d65a0a", "pg2": "#2d4a0a"},
+ {"title": "Heart the Lover", "short": "Heart the Lover", "author": "Lily King", "w": 36, "h": 230, "c1": "#f0580e", "c2": "#c3400a", "fg": "#fff3e8", "ac": "#fff3e8", "pat": "eye", "variant": "modern", "font": "serif", "img": "covers/heart-the-lover.jpg", "blurb": "The instant New York Times bestseller.", "pg1": "#d8480a", "pg2": "#5a1d06"},
+ {"title": "Pachinko", "short": "Pachinko", "author": "Min Jin Lee", "w": 76, "h": 248, "c1": "#3f6f9a", "c2": "#1d3b58", "fg": "#ffffff", "ac": "#f0d4c4", "pat": "waves", "variant": "classic", "font": "serif", "img": "covers/pachinko.jpg", "blurb": "“A powerful story about resilience and compassion” — Barack Obama.", "note": "The New York Times bestseller", "pg1": "#2f5f8a", "pg2": "#14304a"},
+ {"title": "Taiwan Travelogue", "short": "Taiwan Travelogue", "author": "Yáng Shuāng-zǐ", "w": 26, "h": 212, "c1": "#9a9a86", "c2": "#1a1a1a", "fg": "#1a1a1a", "ac": "#1a1a1a", "pat": "grid", "variant": "light", "font": "ital", "img": "covers/taiwan-travelogue.jpg", "kicker": "Translated by Lin King", "blurb": "Winner of the 2026 International Booker Prize."},
+ {"title": "Journey Across Japan", "short": "Journey Across Japan", "author": "Chris Broad", "w": 40, "h": 232, "c1": "#3a6fa8", "c2": "#1b3b64", "fg": "#ffffff", "ac": "#f4b13a", "pat": "sun", "variant": "classic", "font": "cond", "img": "covers/journey-across-japan.jpg", "d": 151, "kicker": "Signed Edition", "blurb": "Adventures off the beaten path.", "pg1": "#2d5f96", "pg2": "#16304f"},
+ {"title": "Shattered Lands", "short": "Shattered Lands", "author": "Sam Dalrymple", "w": 62, "h": 240, "c1": "#2f7a3f", "c2": "#16401f", "fg": "#f6f0d8", "ac": "#f2d36b", "pat": "grid", "variant": "classic", "font": "serif", "img": "covers/shattered-lands.jpg", "d": 156, "blurb": "Five partitions and the making of modern Asia.", "note": "Number one international bestseller", "pg1": "#2a6e38", "pg2": "#123a1c"},
+ {"title": "All About Love", "short": "All About Love", "author": "bell hooks", "w": 38, "h": 226, "c1": "#d8202a", "c2": "#a31018", "fg": "#111111", "ac": "#111111", "pat": "moon", "variant": "classic", "font": "ital", "img": "covers/all-about-love.jpg", "d": 149, "blurb": "New visions.", "pg1": "#c0141e", "pg2": "#4a0a0e"},
+ {"title": "Meditations", "short": "Meditations", "author": "Marcus Aurelius", "w": 28, "h": 222, "c1": "#161616", "c2": "#000000", "fg": "#f2eee6", "ac": "#e7dfcf", "pat": "rings", "variant": "classic", "font": "serif", "img": "covers/meditations.jpg", "d": 145, "kicker": "Penguin Classics"},
+ {"title": "Ways of Seeing", "short": "Ways of Seeing", "author": "John Berger", "w": 20, "h": 210, "c1": "#9a9a9a", "c2": "#111111", "fg": "#111111", "ac": "#111111", "pat": "eye", "variant": "light", "font": "cond", "img": "covers/ways-of-seeing.jpg", "d": 129, "blurb": "Seeing comes before words. The child looks and recognizes before it can speak."},
+ {"title": "Just Kids", "short": "Just Kids", "author": "Patti Smith", "w": 44, "h": 236, "c1": "#161616", "c2": "#050505", "fg": "#ffffff", "ac": "#f1f1f1", "pat": "moon", "variant": "classic", "font": "cond", "img": "covers/just-kids.jpg", "d": 154, "kicker": "National Book Award Winner", "blurb": "The Sunday Times bestseller."},
+ {"title": "London Falling", "short": "London Falling", "author": "Patrick Radden Keefe", "w": 56, "h": 240, "c1": "#1a1713", "c2": "#070605", "fg": "#f3ede0", "ac": "#f3ede0", "pat": "grid", "variant": "classic", "font": "cond", "img": "covers/london-falling.jpg", "d": 156, "blurb": "A mysterious death in a Gilded City and a family’s search for truth.", "note": "The Sunday Times Number One bestseller"},
+ {"title": "Kitchen Confidential", "short": "Kitchen Confidential", "author": "Anthony Bourdain", "w": 40, "h": 230, "c1": "#c8141c", "c2": "#8e0d12", "fg": "#ffffff", "ac": "#ffffff", "pat": "eye", "variant": "modern", "font": "cond", "img": "covers/kitchen-confidential.jpg", "d": 150, "blurb": "New introduction by Irvine Welsh.", "pg1": "#b0101a", "pg2": "#3a0a0c"},
+ {"title": "The Courage to Be Disliked", "short": "Courage to Be Disliked", "author": "Ichiro Kishimi & Fumitake Koga", "w": 46, "h": 232, "c1": "#d12a22", "c2": "#111111", "fg": "#111111", "ac": "#111111", "pat": "rings", "variant": "light", "font": "serif", "img": "covers/the-courage-to-be-disliked.jpg", "d": 151, "blurb": "A single book can change your life.", "note": "The 15 million copy bestseller · “I highly recommend it to everybody” — Andrew Huberman"},
+ {"title": "Ikigai", "short": "Ikigai", "author": "Héctor García & Francesc Miralles", "w": 34, "h": 228, "c1": "#7fb0cb", "c2": "#26485c", "fg": "#26485c", "ac": "#26485c", "pat": "sun", "variant": "light", "font": "ital", "img": "covers/ikigai.jpg", "d": 163, "blurb": "The Japanese secret to a long and happy life.", "note": "The international bestseller", "pg1": "#3a7aa0"},
+ {"title": "Murdle", "short": "Murdle", "author": "G. T. Karber", "w": 36, "h": 226, "c1": "#e03a2c", "c2": "#a82116", "fg": "#ffffff", "ac": "#101010", "pat": "eye", "variant": "modern", "font": "cond", "img": "covers/murdle.jpg", "d": 142, "blurb": "Solve 100 devilishly devious murder mystery logic puzzles.", "note": "#1 Sunday Times bestseller", "pg1": "#c42a1c", "pg2": "#4a0e08"},
+ {"title": "The Finest Hotel in Kabul", "short": "Finest Hotel in Kabul", "author": "Lyse Doucet", "w": 44, "h": 232, "c1": "#e2231a", "c2": "#a31510", "fg": "#ffffff", "ac": "#ffffff", "pat": "sun", "variant": "classic", "font": "serif", "img": "covers/the-finest-hotel-in-kabul.jpg", "d": 151, "blurb": "A people’s history of Afghanistan.", "note": "The No. 1 Sunday Times bestseller", "pg1": "#c81a12", "pg2": "#4a0b08"},
+ {"title": "Hyperpolitics", "short": "Hyperpolitics", "author": "Anton Jäger", "w": 30, "h": 228, "c1": "#ffe600", "c2": "#e6c800", "fg": "#111111", "ac": "#111111", "pat": "grid", "variant": "modern", "font": "cond", "img": "covers/hyperpolitics.jpg", "d": 149, "pg1": "#8a7000", "pg2": "#111111"},
+ {"title": "One Day, Everyone Will Have Always Been Against This", "short": "Always Been Against This", "author": "Omar El Akkad", "w": 32, "h": 230, "c1": "#b8331c", "c2": "#7a1f10", "fg": "#f6e8e0", "ac": "#f6e8e0", "pat": "bird", "variant": "classic", "font": "serif", "img": "covers/one-day-everyone-will-have-always-been-against-this.jpg", "d": 150, "pg1": "#a82c16", "pg2": "#4a130a"},
+ {"title": "Wintering", "short": "Wintering", "author": "Katherine May", "w": 40, "h": 236, "c1": "#e27d3a", "c2": "#1f4a66", "fg": "#1f4a66", "ac": "#1f4a66", "pat": "sun", "variant": "light", "font": "ital", "img": "covers/wintering.jpg", "d": 150, "blurb": "The power of rest and retreat in difficult times.", "note": "“Truly a beautiful book” — Elizabeth Gilbert", "pg1": "#c8651f", "pg2": "#173a52"},
+ {"title": "The New Dark Ages", "short": "The New Dark Ages", "author": "James Marriott", "w": 42, "h": 232, "c1": "#a8281e", "c2": "#a8281e", "fg": "#a8281e", "ac": "#a8281e", "pat": "eye", "variant": "light", "font": "serif", "img": "covers/the-new-dark-ages.jpg", "d": 150, "blurb": "The end of reading and the dawn of a post-literate society.", "note": "The Sunday Times bestseller"},
+ {"title": "Atomic Habits", "short": "Atomic Habits", "author": "James Clear", "w": 52, "h": 232, "c1": "#c9a24a", "c2": "#8a6a12", "fg": "#8a6a12", "ac": "#8a6a12", "pat": "rings", "variant": "light", "font": "cond", "img": "covers/atomic-habits.jpg", "d": 151, "blurb": "An easy & proven way to build good habits & break bad ones.", "note": "Tiny changes, remarkable results · over 25 million copies sold", "pg1": "#a8841f", "pg2": "#5a4408"},
+ {"title": "London Mini Map", "short": "London Mini Map", "author": "Bensons Mapguides", "w": 16, "h": 180, "c1": "#9aa0d6", "c2": "#2a2f7a", "fg": "#ffffff", "ac": "#f2d02a", "pat": "grid", "variant": "modern", "font": "cond", "img": "covers/london-mini-map.jpg", "d": 120, "blurb": "The bestseller London map.", "facts": [["Price", "£2.50"]], "pg1": "#3a40a0", "pg2": "#1a1d55"},
+ {"title": "Music Sets You Free", "short": "Music Sets You Free", "author": "Ryuichi Sakamoto", "w": 34, "h": 232, "c1": "#121212", "c2": "#000000", "fg": "#e8e8e8", "ac": "#d0d0d0", "pat": "moon", "variant": "classic", "font": "serif", "img": "covers/music-sets-you-free.jpg", "d": 150, "kicker": "A Memoir", "note": "Translated by Sam Bett"},
+ {"title": "Moonwalk", "short": "Moonwalk", "author": "Michael Jackson", "w": 46, "h": 232, "c1": "#d3202a", "c2": "#1c2f55", "fg": "#1c2f55", "ac": "#1c2f55", "pat": "eye", "variant": "light", "font": "cond", "img": "covers/moonwalk.jpg", "d": 151, "blurb": "His one and only autobiography. His life, in his words.", "pg1": "#c0141e", "pg2": "#1c2f55"},
+ {"title": "Everything We Do Is Music", "short": "Everything We Do Is Music", "author": "Elizabeth Alker", "w": 36, "h": 232, "c1": "#2aa6d6", "c2": "#0f6e94", "fg": "#ffffff", "ac": "#ffffff", "pat": "rings", "variant": "modern", "font": "cond", "img": "covers/everything-we-do-is-music.jpg", "d": 151, "blurb": "How 20th-century classical music shaped pop.", "note": "A Sunday Times Book of the Year", "pg1": "#1a86b0", "pg2": "#0a3f58"},
+ {"title": "Can’t Get You Out of My Head: In Search of Kylie", "short": "In Search of Kylie", "author": "Michael Cragg", "w": 40, "h": 232, "c1": "#b07ad8", "c2": "#222222", "fg": "#222222", "ac": "#222222", "pat": "sun", "variant": "light", "font": "cond", "img": "covers/cant-get-you-out-of-my-head.jpg", "d": 155, "blurb": "In search of Kylie.", "pg1": "#8a50b8", "pg2": "#222222"},
+ {"title": "Blitz: The Club That Created the 80s", "short": "Blitz", "author": "Robert Elms", "w": 38, "h": 232, "c1": "#111111", "c2": "#000000", "fg": "#ffffff", "ac": "#18e0e8", "pat": "eye", "variant": "classic", "font": "cond", "img": "covers/blitz.jpg", "d": 151, "blurb": "The club that created the 80s.", "pg1": "#0aa8b0", "pg2": "#111111"},
+ {"title": "How Music Works", "short": "How Music Works", "author": "David Byrne", "w": 56, "h": 232, "c1": "#ff6a0a", "c2": "#d94f00", "fg": "#ffffff", "ac": "#ffffff", "pat": "rings", "variant": "modern", "font": "cond", "img": "covers/how-music-works.jpg", "d": 180, "pg1": "#e05500", "pg2": "#5a2200"},
+ {"title": "Bread of Angels: A Memoir", "short": "Bread of Angels", "author": "Patti Smith", "w": 36, "h": 232, "c1": "#8a8a8a", "c2": "#222222", "fg": "#222222", "ac": "#222222", "pat": "moon", "variant": "light", "font": "ital", "img": "covers/bread-of-angels.jpg", "d": 151, "kicker": "A Memoir", "pg1": "#555555", "pg2": "#111111"},
+ {"title": "Crying in H Mart", "short": "Crying in H Mart", "author": "Michelle Zauner", "w": 34, "h": 230, "c1": "#f7a41a", "c2": "#d98400", "fg": "#111111", "ac": "#111111", "pat": "sun", "variant": "modern", "font": "cond", "img": "covers/crying-in-h-mart.jpg", "d": 151, "blurb": "“Heartbreaking” — New York Times.", "pg1": "#b36d00", "pg2": "#2a1a00"},
+ {"title": "Devil on My Shoulder", "short": "Devil on My Shoulder", "author": "Alice Cooper", "w": 44, "h": 236, "c1": "#120a0a", "c2": "#000000", "fg": "#ffffff", "ac": "#e02020", "pat": "eye", "variant": "classic", "font": "cond", "img": "covers/devil-on-my-shoulder.jpg", "d": 153, "kicker": "A Memoir", "note": "The number one Sunday Times bestseller", "pg1": "#c01818", "pg2": "#1a0808"},
+ {"title": "The Third Eye: Early Photographs", "short": "The Third Eye", "author": "George Harrison", "w": 30, "h": 218, "c1": "#7a7a7a", "c2": "#2a2a2a", "fg": "#2a2a2a", "ac": "#2a2a2a", "pat": "eye", "variant": "light", "font": "serif", "img": "covers/the-third-eye.jpg", "d": 165, "blurb": "Early photographs.", "note": "Foreword by Olivia Harrison"},
+ {"title": "Night People: How to Be a DJ in ’90s New York City", "short": "Night People", "author": "Mark Ronson", "w": 38, "h": 234, "c1": "#d92d9a", "c2": "#2a0a1f", "fg": "#ffffff", "ac": "#ffffff", "pat": "grid", "variant": "classic", "font": "cond", "img": "covers/night-people.jpg", "d": 153, "blurb": "How to be a DJ in ’90s New York City.", "note": "The Sunday Times bestseller", "pg1": "#c01e86", "pg2": "#2a0a1f"}
+];
+// cover width (book depth) follows the height, so covers keep their natural proportions
+BOOKS.forEach(b => { if (!b.d) b.d = Math.round(b.h * .652); });
+// the two shelf sections (indices into BOOKS)
+const SECTIONS = {
+  highlights: {label:'Highlights', titles:['The Poison Daughter','Seven and the Swift','Crown Me Dead','Crown Me Yours','Fourth Wing','Threshing Day','Bury Our Bones in the Midnight Soil','A Court of Splintered Harmony','A Court of Forgotten Melody','The Mirror of Infinite Endings','Dungeon Crawler Carl','Project Hail Mary','There Is No Antimemetics Division','A Short Stay in Hell','Life Out of Order','The Discworld Bestiary','The Correspondent']},
+  fiction: {label:'Fiction & Poetry', intro:'Looking for your new favourite novel, or that classic you’ve always meant to read? How about that short story or poetry collection everyone’s talking about? Take a look through our selection of new and recommended fiction and poetry: from top ten bestsellers and new books by big-name authors to hidden gems we recommend, this is the place to first fall in love with page-turning must-reads and essential literary delights.', sub:'Bestselling Fiction & Poetry', titles:['East of Eden','White Nights','The Things We Never Say','Klara and the Sun','The Correspondent','The Wax Child','Red Rising','What We Can Know','Shadow Ticket','Fruit Fly','Heart the Lover','Pachinko','Taiwan Travelogue']},
+  nonfiction: {label:'New & Recommended Non-Fiction', intro:'Non-fiction: a huge and incredible category, in need of a better name. If you’re looking for new, bestselling and essential writing, you’re in the right place: bringing you the recommended must-reads across smart thinking, narrative, essays and journalism, memoir and biography, classics and much more. Much, much more. So whether you’re looking for a true-life story or a critical analysis, a best-reviewed hardback or a best ever paperback, your journey into non-fiction starts here.', sub:'Bestselling Non-Fiction', titles:["Journey Across Japan", "Shattered Lands", "All About Love", "Meditations", "Ways of Seeing", "Just Kids", "London Falling", "Kitchen Confidential", "The Courage to Be Disliked", "Ikigai", "Murdle", "The Finest Hotel in Kabul", "Hyperpolitics", "One Day, Everyone Will Have Always Been Against This", "Wintering", "The New Dark Ages", "Atomic Habits", "London Mini Map"]},
+  music: {label:'New & Recommended Music', intro:'Hey you, what’s that sound? It’s the best of the music section, just in time for festival season. From new and bestselling pop and rock to essential jazz and classical reading. Singer-songwriter memoirs, learn-to-play guides, jazz history and composer biographies. We’ve also got a great selection of Vinyl available online and an even bigger selection in Charing Cross Road, along with the legendary Ray’s Jazz, and our brilliant Classical CDs and DVDs departments. Join us at Foyles for the sound of summer.', sub:'Top of the Charts', titles:["Music Sets You Free", "Moonwalk", "Everything We Do Is Music", "Can’t Get You Out of My Head: In Search of Kylie", "Blitz: The Club That Created the 80s", "Just Kids", "How Music Works", "Bread of Angels: A Memoir", "Crying in H Mart", "Devil on My Shoulder", "The Third Eye: Early Photographs", "Night People: How to Be a DJ in ’90s New York City"]}
+};
+BOOKS.forEach((b,i)=>b.i=i);
+Object.values(SECTIONS).forEach(sec => { sec.ids = sec.titles.map(t => BOOKS.findIndex(b => b.title === t)); });
+// real cover art, if the file has been dropped into bookshelf/covers/ (the generated cover is the fallback)
+BOOKS.filter(b => b.img).forEach(b => {
+  const im = new Image();
+  im.onload = () => {      // swap the art in place: rebuilding the shelves here would throw away running fly-in animations
+    b.imgOk = true;
+    document.querySelectorAll(`.book[data-i="${b.i}"] .cover`).forEach(c => { c.classList.add('art'); c.innerHTML = ''; c.style.backgroundImage = `url("${b.img}")`; });
+  };
+  im.src = b.img;
+});
+
+/* ------------------------------------------------------------------ sound (synthesized with Web Audio) */
+const Snd = (() => {
+  let ac = null, master = null, buf = null, on = true, lastPull = 0;
+  try { on = localStorage.getItem('shelf-sound') !== 'off'; } catch (e) {}
+  const ready = () => on && ac && ac.state === 'running';
+  function unlock(){
+    if (!ac) {
+      const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+      ac = new C(); master = ac.createGain(); master.gain.value = .55; master.connect(ac.destination);
+      buf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+      const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ac.state === 'suspended') ac.resume();
+  }
+  // filtered noise burst whose filter sweeps f0 -> f1 (paper, cloth, air)
+  function noise(t, dur, o){
+    o = Object.assign({type:'bandpass', f0:800, f1:800, q:1, g:.2, a:.02}, o);
+    const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+    const f = ac.createBiquadFilter(); f.type = o.type; f.Q.value = o.q;
+    f.frequency.setValueAtTime(o.f0, t); f.frequency.exponentialRampToValueAtTime(o.f1, t + dur);
+    const g = ac.createGain(); g.gain.setValueAtTime(.0001, t);
+    g.gain.exponentialRampToValueAtTime(o.g, t + o.a); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    src.connect(f); f.connect(g); g.connect(master); src.start(t, Math.random()); src.stop(t + dur + .05);
+  }
+  // soft low thud (a book landing / a cover closing)
+  function thump(t, f, dur, g){
+    const o = ac.createOscillator(), gn = ac.createGain(); o.type = 'sine';
+    o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * .45, t + dur);
+    gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(g, t + .012); gn.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(gn); gn.connect(master); o.start(t); o.stop(t + dur + .05);
+  }
+  // leather creak
+  function creak(t, dur, f0, f1, g){
+    const o = ac.createOscillator(), lp = ac.createBiquadFilter(), gn = ac.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f1, t + dur);
+    lp.type = 'lowpass'; lp.frequency.value = 520; lp.Q.value = 4;
+    gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(g, t + dur * .3); gn.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(lp); lp.connect(gn); gn.connect(master); o.start(t); o.stop(t + dur + .05);
+  }
+  const flutter = (t, n, gap, g) => { for (let i = 0; i < n; i++) noise(t + i * gap, .06, {type:'highpass', f0:4200 + Math.random() * 1500, f1:6500, g:g * (.6 + Math.random() * .6), a:.008}); };
+  return {
+    unlock,
+    get on(){ return on; },
+    set(v){ on = v; try { localStorage.setItem('shelf-sound', v ? 'on' : 'off'); } catch (e) {} if (v) unlock(); },
+    pull(){   // book slides out of the row
+      if (!ready()) return; const t = ac.currentTime; if (t - lastPull < .09) return; lastPull = t;
+      noise(t, .3, {f0:420, f1:1900, q:.8, g:.2, a:.07}); noise(t + .03, .2, {type:'highpass', f0:3200, f1:5200, g:.05, a:.04}); thump(t + .27, 130, .1, .1);
+    },
+    push(){   // ...and slides back in
+      if (!ready()) return; const t = ac.currentTime;
+      noise(t, .26, {f0:1700, f1:420, q:.8, g:.13, a:.05}); thump(t + .22, 110, .09, .09);
+    },
+    cover(){  // cover swings open on its spine: creak, thud, page flutter
+      if (!ready()) return; const t = ac.currentTime;
+      creak(t, .62, 150, 240, .05); noise(t, .6, {f0:260, f1:800, q:.7, g:.13, a:.2});
+      thump(t + .56, 72, .26, .38); flutter(t + .64, 7, .04, .06);
+    },
+    whoosh(){ // the beige page rushes at the camera
+      if (!ready()) return; const t = ac.currentTime;
+      noise(t, .85, {f0:260, f1:3600, q:.5, g:.28, a:.55}); thump(t + .72, 60, .2, .18);
+    },
+    shelve(){ // new books fly in and thud onto the board one after another
+      if (!ready()) return; const t = ac.currentTime;
+      noise(t, .45, {f0:300, f1:2600, q:.6, g:.16, a:.15});
+      for (let i = 0; i < 7; i++) thump(t + .32 + i * .075 + Math.random() * .03, 70 + Math.random() * 25, .1, .1 + Math.random() * .06);
+    },
+    whooshBack(){
+      if (!ready()) return; const t = ac.currentTime;
+      noise(t, .8, {f0:3600, f1:260, q:.5, g:.24, a:.18});
+    },
+    coverClose(){ // cover closes again
+      if (!ready()) return; const t = ac.currentTime;
+      flutter(t, 5, .04, .05); noise(t + .1, .5, {f0:800, f1:240, q:.7, g:.1, a:.1});
+      creak(t + .08, .5, 240, 150, .04); thump(t + .56, 78, .24, .4);
+    }
+  };
+})();
+['pointerdown', 'keydown', 'touchstart'].forEach(ev => addEventListener(ev, Snd.unlock, {passive:true}));
+const sndBtn = document.getElementById('snd');
+const syncSnd = () => { sndBtn.textContent = Snd.on ? 'Sound on' : 'Sound off'; sndBtn.setAttribute('aria-pressed', String(Snd.on)); };
+sndBtn.addEventListener('click', () => { Snd.set(!Snd.on); syncSnd(); });
+syncSnd();
+
+/* ------------------------------------------------------------------ utils */
+const $ = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mulberry = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const shuffle = (arr, r) => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+function emblem(p){
+  const rays = [...Array(12)].map((_, i) => { const t = i * Math.PI / 6, c = Math.cos(t), s = Math.sin(t); return `<line x1="${50+c*24}" y1="${50+s*24}" x2="${50+c*40}" y2="${50+s*40}" class="s"/>`; }).join('');
+  const dots = [...Array(25)].map((_, i) => `<circle cx="${14+(i%5)*18}" cy="${14+Math.floor(i/5)*18}" r="${i%7===0?5.5:2.6}" class="${i%7===0?'a':'f'}"/>`).join('');
+  const P = {
+    sun:`<circle cx="50" cy="50" r="15" class="a"/>${rays}`,
+    waves:[28,44,60,76].map(y => `<path d="M6 ${y}q11-11 22 0t22 0t22 0t22 0" class="s"/>`).join(''),
+    tri:`<path d="M6 82L36 30l20 32 14-18 24 38z" class="a"/><circle cx="76" cy="22" r="8" class="s"/>`,
+    grid:dots,
+    moon:`<mask id="mm"><rect width="100" height="100" fill="#fff"/><circle cx="66" cy="40" r="30" fill="#000"/></mask><circle cx="46" cy="52" r="36" class="a" mask="url(#mm)"/><circle cx="76" cy="26" r="3" class="f"/>`,
+    bird:`<path d="M6 56L40 42L56 10L64 44L95 28L66 58L48 90L44 62Z" class="a"/>`,
+    eye:`<path d="M6 50Q50 8 94 50Q50 92 6 50Z" class="s"/><circle cx="50" cy="50" r="15" class="a"/><circle cx="50" cy="50" r="6" class="f"/>`,
+    rings:`<circle cx="50" cy="50" r="42" class="s"/><circle cx="50" cy="50" r="31" class="a"/><circle cx="50" cy="50" r="20" class="s"/><circle cx="50" cy="50" r="9" class="a"/>`
+  };
+  return `<svg viewBox="0 0 100 100" aria-hidden="true">${P[p]}</svg>`;
+}
+
+/* ------------------------------------------------------------------ one book */
+function buildBook(b, u, full){
+  const w = b.w * u, h = b.h * u, d = (b.d || D) * u;
+  const r = mulberry(b.i * 7 + 3);
+  const root = $('div', 'book');
+  root.style.cssText = `width:${w}px;height:${h}px;--u:${u}px;--c1:${b.c1};--c2:${b.c2};--fg:${b.fg};--ac:${b.ac}`;
+
+  // spine
+  const fw = {serif:.58, cond:.5, ital:.46}[b.font];
+  const fs = Math.min(w * .4, (h * .62) / (b.short.length * fw));
+  const spine = $('div', `face spine v-${b.variant}`);
+  spine.style.cssText = `width:${w}px;height:${h}px;transform:translateZ(${d/2}px)`;
+  let scuffs = '';
+  for (let k = 0; k < 3; k++) {
+    const sw = (.5 + r() * .8) * w, sh = (6 + r() * 26) * u;
+    scuffs += `<b class="scuff" style="left:${r()*(w-sw)}px;top:${r()<.5 ? r()*h*.15 : h*(.8+r()*.15)}px;width:${sw}px;height:${sh}px;opacity:${.12+r()*.2}"></b>`;
+  }
+  spine.innerHTML =
+    `<i class="blk"></i><i class="band t1"></i><i class="band t2"></i><i class="band b1"></i><i class="band b2"></i>` +
+    `<span class="emb emblem">${emblem(b.pat)}</span>` +
+    `<span class="st f-${b.font}" style="font-size:${fs}px">${esc(b.short)}</span>${scuffs}`;
+
+  // front cover (right-hand face; rotateY(-90deg) on the book turns it to the viewer)
+  const leaf = $('div', 'leaf'), hinge = $('div', 'hinge');
+  leaf.style.cssText = `width:${d}px;height:${h}px;left:${(w-d)/2}px;transform:rotateY(90deg) translateZ(${w/2}px)`;
+  const cover = $('div', 'face cover');
+  cover.style.cssText = `width:${d}px;height:${h}px`;
+  cover.innerHTML =
+    `<i class="frame"></i><div class="c-top">${esc(b.author)}</div>` +
+    `<div class="c-emb emblem">${emblem(b.pat)}</div>` +
+    `<div class="c-title f-${b.font}">${esc(b.title)}</div>` +
+    `<div class="c-foot">${esc(b.kicker || '')}</div>`;
+  if (b.imgOk) { cover.classList.add('art'); cover.innerHTML = ''; cover.style.backgroundImage = `url("${b.img}")`; }
+
+  hinge.append(cover);
+  if (full) {
+    const liner = $('div', 'face liner'), fp = $('div', 'face firstpage');
+    liner.style.cssText = fp.style.cssText = `width:${d}px;height:${h}px`;
+    hinge.append(liner); leaf.append(fp);
+  }
+  leaf.append(hinge);
+
+  const back = $('div', 'face back');
+  back.style.cssText = `width:${d}px;height:${h}px;left:${(w-d)/2}px;transform:rotateY(-90deg) translateZ(${w/2}px)`;
+
+  const top = $('div', 'face topf');
+  top.style.cssText = `width:${w}px;height:${d}px;top:${(h-d)/2}px;transform:rotateX(90deg) translateZ(${h/2}px)`;
+
+  root.append(spine, leaf, back, top);
+  if (full) {
+    const pg = $('div', 'face pgs');
+    pg.style.cssText = `width:${w}px;height:${h}px;transform:rotateY(180deg) translateZ(${d/2}px)`;
+    root.append(pg);
+  }
+  return root;
+}
+
+/* ------------------------------------------------------------------ shelves */
+const shelf = document.getElementById('shelf');
+const FACTOR = [1, .82, 1.18];
+const SEC_ORDER = ['highlights', 'fiction', 'nonfiction', 'music'];   // one shelf per section; further shelves repeat the cycle
+const rows = [];
+let u = 1, vel = 0, dragging = false, state = 'shelf';
+let pulledEl = null, ptr = null;
+
+const headPx = () => Math.max(56, innerHeight * .08);
+const rowHeight = () => (innerHeight - headPx()) / 3;
+let lastW = 0, lastH = 0;
+function setMetrics(){
+  lastW = innerWidth; lastH = innerHeight;
+  document.documentElement.style.setProperty('--head', headPx() + 'px');
+  document.documentElement.style.setProperty('--rowh', rowHeight() + 'px');
+  u = Math.max(.5, Math.min(1.25, (rowHeight() - 30) / (MAXH * 1.06)));
+}
+function fillRow(row){
+  row.track.textContent = '';
+  const r = mulberry(100 + row.ri * 17);
+  const order = shuffle(SECTIONS[row.key].ids.slice(), r);
+  const items = []; let x = 0;
+  order.forEach(i => { items.push({i, x, lean: r() < .14 ? (r() * 4 - 2) : 0}); x += BOOKS[i].w * u + (1 + r() * 3) * u; });
+  row.W = x;
+  const copies = Math.ceil(innerWidth / x) + 1, frag = document.createDocumentFragment();
+  for (let c = 0; c < copies; c++) items.forEach(it => {
+    const b = BOOKS[it.i], el = buildBook(b, u, false);
+    el.style.left = (c * x + it.x) + 'px'; el.style.bottom = '0';
+    el.style.setProperty('--lean', it.lean.toFixed(2) + 'deg');
+    el.style.setProperty('--z0', (-(b.d || D) * u / 2 + (it.i % 5) * .8) + 'px'); el.style.setProperty('--z1', (46 * u) + 'px');
+    el.dataset.i = it.i; el.tabIndex = 0; el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', `${b.title} by ${b.author}`);
+    frag.append(el);
+  });
+  row.track.append(frag);
+  row.off %= x; paint(row);
+}
+const io = new IntersectionObserver(es => es.forEach(e => {
+  const row = e.target._row; if (e.isIntersecting && row.el.classList.contains('pending')) enterRow(row);
+}), {root: shelf, threshold: .35});
+function addRow(){
+  const ri = rows.length, key = SEC_ORDER[ri % SEC_ORDER.length], sec = SECTIONS[key];
+  const el = $('section', 'row pending'), track = $('div', 'track'), board = $('div', 'board');
+  const lab = $('button', 'shelflabel', esc(sec.label) + (sec.intro ? ' <i>ⓘ</i>' : '')); lab.type = 'button';
+  lab.addEventListener('click', e => { e.stopPropagation(); showIntro(key); });
+  el.append(track, board, lab); shelf.append(el);
+  const row = {el, track, ri, key, f: FACTOR[ri % 3], W: 1, off: Math.random() * 600};
+  el._row = row; rows.push(row); fillRow(row); io.observe(el);
+}
+function layout(){ setMetrics(); rows.forEach(row => { row.el.classList.remove('pending'); fillRow(row); }); }
+function maybeMore(){ while (shelf.scrollHeight - shelf.scrollTop - shelf.clientHeight < rowHeight() * 1.5) addRow(); }
+shelf.addEventListener('scroll', maybeMore, {passive:true});
+
+// books of a shelf that just scrolled into view fly in at an angle, land leaning on the board, rock and stand upright
+const bookVars = el => [parseFloat(el.style.getPropertyValue('--z0')), parseFloat(el.style.getPropertyValue('--lean'))];
+let lastShelve = 0;
+function enterRow(row){
+  row.el.classList.remove('pending');
+  if (reduce) return;
+  const H = row.el.clientHeight, vw = innerWidth, base = (row.ri % 3) * 90, now = performance.now();
+  if (now - lastShelve > 500) { lastShelve = now; Snd.shelve(); }
+  row.track.querySelectorAll('.book').forEach(el => {
+    const r = el.getBoundingClientRect(); if (r.right < -80 || r.left > vw + 80) return;
+    const [z0, lean] = bookVars(el);
+    const f = (tx, ty, tz, a) => `translate3d(${tx}px,${ty}px,${z0 + tz}px) rotateZ(${a}deg)`;
+    el.animate([
+      {transform:f(-90, -H * 1.25, 160, -34), offset:0, easing:'cubic-bezier(.3,.6,.4,1)'},
+      {transform:f(0, 0, 0, 16), offset:.55, easing:'ease-out'},
+      {transform:f(0, 0, 0, -5), offset:.78, easing:'ease-in-out'},
+      {transform:f(0, 0, 0, lean + 1.5), offset:.92, easing:'ease-in-out'},
+      {transform:f(0, 0, 0, lean), offset:1}
+    ], {duration:950, delay:r.left / vw * 340 + base + Math.random() * 60, fill:'backwards'});
+  });
+}
+const paint = row => { row.track.style.transform = `translate3d(${-row.off}px,0,0)`; };
+function move(dx){ rows.forEach(row => { row.off = ((row.off + dx * row.f) % row.W + row.W) % row.W; paint(row); }); }
+
+let last = performance.now();
+(function tick(t){
+  const dt = Math.min(.05, (t - last) / 1000); last = t;
+  updateHover();
+  if (state === 'shelf' && !dragging) {
+    vel *= Math.exp(-2.4 * dt);
+    move((vel + (reduce ? 0 : 14)) * dt);
+  }
+  requestAnimationFrame(tick);
+})(last);
+
+/* drag / wheel / keys */
+let down = false, lastX = 0, lastY = 0, lastT = 0, moved = 0, dragX = 0, dragY = 0;
+shelf.addEventListener('pointerdown', e => { down = true; lastX = e.clientX; lastY = e.clientY; lastT = e.timeStamp; moved = 0; dragX = dragY = 0; vel = 0; });
+addEventListener('pointermove', e => {
+  if (!down) return;
+  const dx = e.clientX - lastX, dy = e.clientY - lastY, dtm = Math.max(1, e.timeStamp - lastT);
+  lastX = e.clientX; lastY = e.clientY; lastT = e.timeStamp; moved += Math.abs(dx) + Math.abs(dy); dragX += dx; dragY += dy;
+  if (!dragging && moved > 6 && Math.abs(dragX) > Math.abs(dragY)) { dragging = true; shelf.classList.add('grabbing'); }
+  if (dragging) { move(-dx); vel = vel * .6 + (-dx / dtm * 1000) * .4; }
+});
+const endDrag = () => { down = false; dragging = false; shelf.classList.remove('grabbing'); };
+addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
+addEventListener('wheel', e => { if (state !== 'shelf') return; if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) vel = Math.max(-2600, Math.min(2600, vel + e.deltaX * 4)); }, {passive:true});   // vertical wheel scrolls the shelves natively
+/* hover: the book slides out and turns its cover towards you; click opens it */
+function setPulled(el, silent){
+  if (pulledEl === el) return;
+  if (pulledEl) pulledEl.classList.remove('pulled');
+  if (!silent) { if (el) Snd.pull(); else Snd.push(); }
+  pulledEl = el; if (el) el.classList.add('pulled');
+}
+function updateHover(){
+  if (state !== 'shelf') return;
+  if (dragging) { setPulled(null); return; }
+  if (!ptr) return;
+  if (pulledEl) {            // 3D hit-testing is unreliable once turned, so keep it while inside its cover
+    const r = pulledEl.querySelector('.cover').getBoundingClientRect();
+    if (ptr.x >= r.left && ptr.x <= r.right && ptr.y >= r.top && ptr.y <= r.bottom) return;
+  }
+  const t = document.elementFromPoint(ptr.x, ptr.y);
+  setPulled(t && t.closest ? t.closest('.book') : null);
+}
+shelf.addEventListener('pointermove', e => { if (e.pointerType !== 'touch') ptr = {x:e.clientX, y:e.clientY}; });
+shelf.addEventListener('pointerleave', () => { ptr = null; setPulled(null); });
+shelf.addEventListener('focusin', e => { if (e.target.matches && e.target.matches(':focus-visible')) setPulled(e.target.closest('.book')); });
+shelf.addEventListener('focusout', () => { if (!ptr) setPulled(null); });
+shelf.addEventListener('click', e => { if (moved > 6) return; const el = pulledEl || e.target.closest('.book'); if (el) openBook(el); });
+shelf.addEventListener('keydown', e => {
+  const el = e.target.closest && e.target.closest('.book');
+  if ((e.key === 'Enter' || e.key === ' ') && el) { e.preventDefault(); openBook(el); }
+  if (e.key === 'ArrowRight') vel += 700; if (e.key === 'ArrowLeft') vel -= 700;
+});
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (state === 'shelf' && (Math.abs(innerWidth - lastW) > 1 || Math.abs(innerHeight - lastH) > 1)) { layout(); maybeMore(); } }, 150); });   // ignore no-op resizes: a rebuild would throw away running fly-in animations
+
+/* ------------------------------------------------------------------ pull out → turn → ink */
+let ctx = null;
+
+async function openBook(origin){
+  if (state !== 'shelf') return;
+  state = 'opening';
+  if (pulledEl !== origin) { setPulled(origin); await wait(480); }
+  Snd.pull();   // touch: no hover, so turn it first
+  const b = BOOKS[+origin.dataset.i];
+  const vw = innerWidth, vh = innerHeight;
+  const cr = origin.querySelector('.cover').getBoundingClientRect();
+  const sx = cr.left + cr.width / 2 - vw / 2, sy = cr.top + cr.height / 2 - vh / 2;
+
+  const S = Math.min(.62 * vh / (b.h * u), .8 * vw / ((b.d || D) * u), 3.2);
+  const hero = buildBook(b, u * S, true);
+  hero.classList.add('hero');
+  hero.style.transform = 'rotateY(-90deg)';
+  const hw = b.w * u * S, hh = b.h * u * S, hd = (b.d || D) * u * S;
+  hero.style.left = -hw / 2 + 'px'; hero.style.top = -hh / 2 + 'px';
+
+  const stage = $('div', 'stage');
+  stage.style.setProperty('--glow', b.c1);
+  const dim = $('div', 'dim'), glow = $('div', 'glow'), mover = $('div', 'mover'), tilt = $('div', 'tilt');
+  tilt.append(hero); mover.append(tilt);
+  const cap = $('div', 'caption', `<b>${esc(b.title)}</b><span>Click the cover to open</span>`);
+  const xbtn = $('button', 'x', 'Back to the shelf'); xbtn.type = 'button';
+  stage.append(dim, glow, mover, cap, xbtn);
+  document.body.append(stage);
+  origin.style.visibility = 'hidden';
+  requestAnimationFrame(() => stage.classList.add('on'));
+
+  const k = cr.height / hh, T = reduce ? 250 : 560;
+  const aM = mover.animate([
+    {transform:`translate3d(${sx}px,${sy}px,0) scale(${k})`},
+    {transform:`translate3d(0,${-.02 * vh}px,0) scale(1)`}
+  ], {duration:T, easing:'cubic-bezier(.5,0,.2,1)', fill:'forwards'});
+
+  ctx = {b, origin, stage, hero, tilt, cap, xbtn, mover, aM, hd, hh};
+  // 3D hit-testing only reliably hits the book's centre line, so test against the cover's on-screen rect instead
+  const onCover = e => { const r = hero.querySelector('.cover').getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; };
+  stage.addEventListener('click', e => {
+    if (state !== 'cover' || e.target === xbtn) return;
+    if (onCover(e)) ink(); else closeBook();
+  });
+  xbtn.addEventListener('click', () => { if (state === 'cover') closeBook(); else if (state === 'page') closeInk(); });
+  stage.addEventListener('pointermove', e => {
+    if (state !== 'cover') return;
+    stage.style.cursor = onCover(e) ? 'pointer' : 'default';
+    const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5;
+    tilt.style.transform = `rotateY(${x * 22}deg) rotateX(${-y * 14}deg)`;
+  });
+
+  await wait(T * .7);                   // start swinging the cover open while the book is still arriving
+  state = 'cover';
+  ink();       // the click already means "open": swing the cover open at once
+}
+
+async function closeBook(){
+  if (state !== 'cover') return;
+  state = 'closing';
+  const {stage, tilt, cap, aM, origin} = ctx;
+  cap.classList.remove('show'); tilt.style.transform = '';
+  stage.classList.remove('on');                    // the light veil fades while the book flies back
+  Snd.push();
+  aM.reverse(); aM.updatePlaybackRate(-1.4);
+  await aM.finished;
+  origin.style.visibility = '';                    // shelf copy is still turned cover-out: seamless hand-over
+  stage.remove(); ctx = null;
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  ptr = null; setPulled(null, true);               // ...and now it slides back into the row
+  await wait(520);
+  state = 'shelf';
+}
+
+/* the cover swings open on its spine, the beige first page rushes at the camera and becomes the summary page */
+async function ink(){
+  if (state !== 'cover') return;
+  state = 'inking';
+  const {b, hero, stage, cap, xbtn, tilt, mover} = ctx, vw = innerWidth, vh = innerHeight;
+  cap.classList.remove('show'); tilt.style.transform = '';
+
+  const page = $('div', 'page');
+  page.style.cssText = `--c1:${b.pg1 || b.c1};--c2:${b.pg2 || b.c2}`;
+  page.innerHTML =
+    `<div class="ghost">${esc(b.title.replace(/^(The|A|An|How to)\s+/i, '')[0])}</div>` +
+    `<div class="pg">` +
+      `<div class="left">` +
+        (b.kicker ? `<p class="kicker rise" style="--i:0">${esc(b.kicker)}</p>` : '') +
+        `<h2 class="rise" style="--i:1">${esc(b.title)}</h2>` +
+        `<p class="by rise" style="--i:2">by ${esc(b.author)}</p>` +
+        `<div class="rule rise" style="--i:3"></div>` +
+        (b.facts ? `<dl class="rise" style="--i:3">${b.facts.map(f => `<dt>${esc(f[0])}</dt><dd>${esc(f[1])}</dd>`).join('')}</dl>` : '') +
+      `</div>` +
+      `<div class="right">` +
+        (b.blurb ? `<p class="blurb rise" style="--i:3">${esc(b.blurb)}</p>` : '') +
+        (b.note ? `<p class="chap rise" style="--i:4">${esc(b.note)}</p>` : '') +
+      `</div>` +
+    `</div>`;
+  stage.insertBefore(page, xbtn); ctx.page = page;
+  xbtn.classList.add('dark'); xbtn.textContent = 'Close the book';
+
+  const T1 = reduce ? 250 : 600, T2 = reduce ? 250 : 480;
+  const aH = hero.querySelector('.hinge').animate(
+    [{transform:'rotateY(0deg)'}, {transform:'rotateY(-168deg)'}],
+    {duration:T1, easing:'cubic-bezier(.6,0,.25,1)', fill:'forwards'});
+  ctx.aH = aH; Snd.cover();
+  await wait(T1 * .72);                 // rush at the camera before the cover has fully settled
+
+  const y = -.02 * vh, F = Math.max(vw / ctx.hd, vh / ctx.hh) * 1.12;
+  const aZ = mover.animate(
+    [{transform:`translate3d(0,${y}px,0) scale(1)`}, {transform:`translate3d(0,${y}px,0) scale(${F})`}],
+    {duration:T2, easing:'cubic-bezier(.7,0,.3,1)', fill:'forwards'});
+  ctx.aZ = aZ; Snd.whoosh();
+  await wait(T2 * .9);
+  page.classList.add('show');
+  await aZ.finished;
+  state = 'page';
+}
+
+async function closeInk(){
+  if (state !== 'page') return;
+  state = 'inking';
+  const {page, aZ, aH, xbtn, cap} = ctx;
+  page.classList.remove('show');
+  await wait(220);
+  Snd.whooshBack(); aZ.reverse(); aZ.updatePlaybackRate(-1.6); await aZ.finished; aZ.cancel();
+  Snd.coverClose(); aH.reverse(); aH.updatePlaybackRate(-1.6); await aH.finished; aH.cancel();
+  page.remove(); ctx.page = null;
+  xbtn.classList.remove('dark'); xbtn.textContent = 'Back to the shelf';
+  cap.classList.add('show'); state = 'cover';
+}
+
+addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (state === 'page') closeInk(); else if (state === 'cover') closeBook(); else if (state === 'sheet') closeSheet();
+});
+
+/* ------------------------------------------------------------------ site pages (edit this object) */
+const SITE = {
+  about: {
+    kicker:'About', title:'A shelf that never ends',
+    lead:'The Endless Shelf is a bookshop you browse with your hands: pull a spine off the shelf, turn the book to its cover, open it, and keep scrolling — there is always another shelf below.',
+    cards:[
+      {title:'On the shelves', list:['Highlights','Fiction & Poetry','New & Recommended Non-Fiction','New & Recommended Music','…and then the cycle starts again, in a new order.']},
+      {title:'How to browse', list:['Hover a spine — the book slides out and turns its cover to you.','Click it — the cover swings open and the page rushes towards you.','Scroll down for more shelves; drag sideways to slide them along.']},
+      {title:'Credits', list:['Covers and book details belong to their publishers and are shown here as a design demo.','Plain HTML, CSS and JavaScript — no frameworks, no build step.','Sounds are synthesised in your browser.']}
+    ],
+    note:'Replace this copy with your own: it lives in the SITE object near the top of the script in index.html.'
+  },
+  contact: {
+    kicker:'Contact', title:'Come and say hello',
+    lead:'Questions about a book, an event or the shop itself? Write, call or drop in — we read everything.',
+    cards:[
+      {title:'Visit', list:['Your Street 1','1000 AA Your City','Your Country']},
+      {title:'Write & call', facts:[['Email','<a href="mailto:hello@example.com">hello@example.com</a>'],['Phone','<a href="tel:+000000000000">+00 00 000 0000</a>'],['Social','@theendlessshelf']]},
+      {title:'Opening hours', facts:[['Mon–Fri','10:00 – 19:00'],['Saturday','10:00 – 18:00'],['Sunday','12:00 – 17:00']]}
+    ],
+    cta:{label:'Send a message', href:'mailto:hello@example.com'}
+  }
+};
+const sheet = document.getElementById('sheet'), sheetIn = document.getElementById('sheet-in');
+let sheetKey = null;
+function sheetHTML(pg){
+  const card = c => `<div class="card"><h3>${esc(c.title)}</h3>` +
+    (c.list ? `<ul>${c.list.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '') +
+    (c.facts ? `<dl>${c.facts.map(f => `<dt>${esc(f[0])}</dt><dd>${f[1]}</dd>`).join('')}</dl>` : '') + `</div>`;
+  return `<p class="kicker">${esc(pg.kicker)}</p><h2>${esc(pg.title)}</h2><p class="blurb">${esc(pg.lead)}</p>` +
+    `<div class="cards">${pg.cards.map(card).join('')}</div>` +
+    (pg.cta ? `<a class="cta" href="${pg.cta.href}">${esc(pg.cta.label)}</a>` : '') +
+    (pg.note ? `<p class="note">${esc(pg.note)}</p>` : '');
+}
+function setTab(key){ [...document.getElementById('tabs').children].forEach(t => t.setAttribute('aria-selected', String(t.dataset.k === key))); }
+function openSheet(key){
+  if (state !== 'shelf' && state !== 'sheet') return;
+  if (sheetKey === key) return;
+  Snd.push(); setPulled(null, true); intro.classList.remove('show');
+  sheetIn.innerHTML = sheetHTML(SITE[key]); sheet.scrollTop = 0;
+  sheet.classList.add('show'); sheet.setAttribute('aria-hidden', 'false');
+  sheetKey = key; state = 'sheet'; setTab(key);
+}
+function closeSheet(){
+  if (!sheetKey) return;
+  sheet.classList.remove('show'); sheet.setAttribute('aria-hidden', 'true');
+  sheetKey = null; state = 'shelf'; setTab('shelves');
+}
+[['shelves', 'Shelves'], ['about', 'About'], ['contact', 'Contact']].forEach(([k, label]) => {
+  const t = $('button', 'tab', label); t.type = 'button'; t.dataset.k = k;
+  t.addEventListener('click', () => k === 'shelves' ? closeSheet() : openSheet(k));
+  document.getElementById('tabs').append(t);
+});
+setTab('shelves');
+
+/* section intro card (click a shelf label) */
+const intro = document.getElementById('intro');
+let introT;
+function showIntro(key){
+  const sec = SECTIONS[key]; if (!sec.intro) return;
+  intro.innerHTML = `<b>${esc(sec.label)}</b><i>${esc(sec.sub || '')}</i><p>${esc(sec.intro)}</p>`;
+  intro.classList.add('show'); clearTimeout(introT); introT = setTimeout(() => intro.classList.remove('show'), 9000);
+}
+intro.addEventListener('click', () => intro.classList.remove('show'));
+setMetrics();
+for (let i = 0; i < 4; i++) addRow();
+maybeMore();
+})();
+</script>
+</body>
+</html>

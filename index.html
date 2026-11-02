@@ -72,7 +72,7 @@ html,body{height:100%;overflow:hidden;background:var(--room);color:var(--ink-sof
 .row:not(.active):hover::before{background:rgb(var(--room-rgb) / .34)}
 .row:not(.active) .track{pointer-events:none;bottom:calc(14px - var(--shift,0px));transition:bottom var(--dur) var(--ease)}
 .row:not(.active):hover .track{bottom:calc(22px - var(--shift,0px))}
-.row.active .track{transition:bottom var(--dur) var(--ease)}
+.row.active .track{z-index:4;transition:bottom var(--dur) var(--ease)}
 .row.pending .track{visibility:hidden}
 .shelflabel{transition:all var(--dur) var(--ease),background .2s}
 .row.active .shelflabel{top:12px;background:transparent;border-color:transparent;padding:0;font:700 italic clamp(24px,3.2vw,38px)/1.05 var(--font-display);letter-spacing:0;text-transform:none;color:var(--accent-deep);cursor:pointer}
@@ -97,7 +97,7 @@ body.sheet-open .rail,body.sheet-open .hint{opacity:0;pointer-events:none}
 /* ---------- book (3D box: spine faces the viewer) ---------- */
 .book{position:absolute;transform-style:preserve-3d;transform-origin:50% 50% 0;outline:none}
 .track .book{transform-origin:50% 100% 0;transform:translateX(var(--sx,0px)) translateZ(var(--z0)) rotateZ(var(--lean));transition:transform .55s cubic-bezier(.2,.8,.2,1);cursor:pointer}
-.track .book.pulled{transform:translateZ(var(--z1)) rotateZ(-4deg) rotateY(-90deg)}   /* cover to the viewer, tipped slightly anticlockwise */
+.track .book.pulled{transform:translateY(-9px) translateZ(var(--z1)) rotateZ(-4deg) rotateY(-90deg)}   /* cover to the viewer, tipped slightly anticlockwise */
 /* resting books show only their spine: side faces of neighbours overlap and z-fight (the shimmer) */
 .track .back,.track .topf{display:none}   /* shelf books show only the spine; top faces smear towards the vanishing point */
 .track .book .leaf{visibility:hidden;transition:visibility 0s .5s}
@@ -152,8 +152,18 @@ body.sheet-open .rail,body.sheet-open .hint{opacity:0;pointer-events:none}
 .frame{position:absolute!important;inset:calc(var(--u)*11);border:calc(var(--u)*1.3) solid var(--ac);opacity:.75}
 .frame::after{content:"";position:absolute;inset:calc(var(--u)*3);border:calc(var(--u)*.6) solid var(--ac);opacity:.7}
 .cover.art{background-size:100% 100%;background-position:center}
-.cover.art::before{opacity:0}
-.cover.art::after{box-shadow:inset 0 0 calc(var(--u)*5) rgba(0,0,0,.22)}
+.cover.art{border-radius:calc(var(--u)*1.5) calc(var(--u)*4) calc(var(--u)*4) calc(var(--u)*1.5);filter:saturate(.88) contrast(.93) brightness(1.02) blur(.3px)}
+.cover.art::before{opacity:.3;background:var(--paper-grain)}      /* paper tooth */
+.cover.art::after{      /* worn: hinge crease, scuffed corners, faint age wash, soft gloss */
+  background:
+    linear-gradient(90deg,rgba(0,0,0,.34) 0,rgba(0,0,0,0) 2%,rgba(255,255,255,.16) 3.4%,rgba(0,0,0,.2) 5%,rgba(0,0,0,0) 8%),
+    radial-gradient(circle at 0 0,rgba(255,244,220,.5),transparent 9%),
+    radial-gradient(circle at 100% 0,rgba(255,244,220,.4),transparent 8%),
+    radial-gradient(circle at 100% 100%,rgba(255,244,220,.55),transparent 10%),
+    radial-gradient(circle at 0 100%,rgba(255,244,220,.4),transparent 8%),
+    linear-gradient(150deg,rgba(255,255,255,.14),rgba(255,255,255,0) 38%,rgba(70,45,15,.13) 100%),
+    rgba(140,105,60,.07);
+  box-shadow:inset 0 0 calc(var(--u)*7) rgba(40,25,5,.32),inset 0 0 0 calc(var(--u)*.8) rgba(255,240,210,.22)}
 .c-top{font-size:calc(var(--u)*8.5);letter-spacing:.24em;text-transform:uppercase;opacity:.88;font-weight:500}
 .c-emb{width:calc(var(--u)*62);height:calc(var(--u)*62)}
 .c-title{font-size:calc(var(--u)*19);line-height:1.04;color:var(--fg)}

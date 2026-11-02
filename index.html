@@ -63,10 +63,10 @@ html,body{height:100%;overflow:hidden;background:var(--room);color:var(--ink-sof
 .shoplogo{height:1.1em;vertical-align:-.12em;margin-right:.45em}
 .head p{font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.6;text-align:right}
 
-.row{position:relative;height:var(--hc,100px);transition:height var(--dur) var(--ease);cursor:pointer;perspective:900px;perspective-origin:50% 22%;overflow:hidden;background:linear-gradient(var(--wall-a),var(--wall-b));box-shadow:inset 0 10px 18px -12px rgba(70,50,25,.3)}
+.row{position:relative;height:var(--hc,100px);transition:height var(--dur) var(--ease);cursor:pointer;perspective:900px;perspective-origin:50% 22%;overflow:visible;clip-path:inset(0 0 0 0);transition:height var(--dur) var(--ease),clip-path var(--dur) var(--ease);background:linear-gradient(var(--wall-a),var(--wall-b));box-shadow:inset 0 10px 18px -12px rgba(70,50,25,.3)}
 .row::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;background:linear-gradient(90deg,rgb(var(--room-rgb) / .95),transparent 10%,transparent 90%,rgb(var(--room-rgb) / .95))}
 /* focus: one main shelf, the rest are quiet strips showing only the tops of the spines */
-.row.active{height:var(--ha,420px);cursor:grab}
+.row.active{height:var(--ha,420px);cursor:grab;z-index:2;clip-path:inset(0 0 -190px 0)}   /* the pulled-out book may overhang the board and the strip below */
 .row::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:rgb(var(--room-rgb) / .62);transition:opacity var(--dur) var(--ease),background .3s}
 .row.active::before{opacity:0}
 .row:not(.active):hover::before{background:rgb(var(--room-rgb) / .34)}
@@ -97,7 +97,7 @@ body.sheet-open .rail,body.sheet-open .hint{opacity:0;pointer-events:none}
 /* ---------- book (3D box: spine faces the viewer) ---------- */
 .book{position:absolute;transform-style:preserve-3d;transform-origin:50% 50% 0;outline:none}
 .track .book{transform-origin:50% 100% 0;transform:translateX(var(--sx,0px)) translateZ(var(--z0)) rotateZ(var(--lean));transition:transform .55s cubic-bezier(.2,.8,.2,1);cursor:pointer}
-.track .book.pulled{transform:translateY(-9px) translateZ(var(--z1)) rotateZ(-4deg) rotateY(-90deg)}   /* cover to the viewer, tipped slightly anticlockwise */
+.track .book.pulled{transform:translateY(-26px) translateZ(var(--z1)) rotateZ(-4deg) rotateY(-90deg)}   /* cover to the viewer, tipped slightly anticlockwise */
 /* resting books show only their spine: side faces of neighbours overlap and z-fight (the shimmer) */
 .track .back,.track .topf{display:none}   /* shelf books show only the spine; top faces smear towards the vanishing point */
 .track .book .leaf{visibility:hidden;transition:visibility 0s .5s}

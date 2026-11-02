@@ -364,78 +364,87 @@ BOOKS.filter(b => b.img).forEach(b => {
 
 /* ------------------------------------------------------------------ sound (synthesized with Web Audio) */
 const Snd = (() => {
+  // everything runs through one low-pass "room": no hiss, no sparkle — just muffled paper, cloth and cardboard
   let ac = null, master = null, buf = null, on = true, lastPull = 0;
   try { on = localStorage.getItem('shelf-sound') !== 'off'; } catch (e) {}
   const ready = () => on && ac && ac.state === 'running';
   function unlock(){
     if (!ac) {
       const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
-      ac = new C(); master = ac.createGain(); master.gain.value = .55; master.connect(ac.destination);
+      ac = new C();
+      const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100; lp.Q.value = .4;
+      const warm = ac.createBiquadFilter(); warm.type = 'lowshelf'; warm.frequency.value = 220; warm.gain.value = 3;
+      master = ac.createGain(); master.gain.value = .34;
+      master.connect(warm); warm.connect(lp); lp.connect(ac.destination);
       buf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
-      const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      // brown-ish noise (integrated white noise) is much duller than white
+      const d = buf.getChannelData(0); let last = 0;
+      for (let i = 0; i < d.length; i++) { last = (last + .04 * (Math.random() * 2 - 1)) / 1.04; d[i] = last * 3.5; }
     }
     if (ac.state === 'suspended') ac.resume();
   }
-  // filtered noise burst whose filter sweeps f0 -> f1 (paper, cloth, air)
+  // soft noise swell (paper / cloth brushing), filter sweeps f0 -> f1
   function noise(t, dur, o){
-    o = Object.assign({type:'bandpass', f0:800, f1:800, q:1, g:.2, a:.02}, o);
+    o = Object.assign({f0:500, f1:500, q:.5, g:.12, a:.08}, o);
     const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
-    const f = ac.createBiquadFilter(); f.type = o.type; f.Q.value = o.q;
+    const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = o.q;
     f.frequency.setValueAtTime(o.f0, t); f.frequency.exponentialRampToValueAtTime(o.f1, t + dur);
     const g = ac.createGain(); g.gain.setValueAtTime(.0001, t);
     g.gain.exponentialRampToValueAtTime(o.g, t + o.a); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
     src.connect(f); f.connect(g); g.connect(master); src.start(t, Math.random()); src.stop(t + dur + .05);
   }
-  // soft low thud (a book landing / a cover closing)
+  // dull thud: a low sine that falls in pitch plus a short puff of muffled noise (a book on wood)
   function thump(t, f, dur, g){
     const o = ac.createOscillator(), gn = ac.createGain(); o.type = 'sine';
-    o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * .45, t + dur);
-    gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(g, t + .012); gn.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * .55, t + dur);
+    gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(g, t + .018); gn.gain.exponentialRampToValueAtTime(.0001, t + dur);
     o.connect(gn); gn.connect(master); o.start(t); o.stop(t + dur + .05);
+    noise(t, dur * .7, {f0:320, f1:140, g:g * .55, a:.012});
   }
-  // leather creak
+  // old binding creak, barely there
   function creak(t, dur, f0, f1, g){
     const o = ac.createOscillator(), lp = ac.createBiquadFilter(), gn = ac.createGain();
-    o.type = 'sawtooth'; o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f1, t + dur);
-    lp.type = 'lowpass'; lp.frequency.value = 520; lp.Q.value = 4;
-    gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(g, t + dur * .3); gn.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.type = 'triangle'; o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f1, t + dur);
+    lp.type = 'lowpass'; lp.frequency.value = 330; lp.Q.value = 1.5;
+    gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(g, t + dur * .4); gn.gain.exponentialRampToValueAtTime(.0001, t + dur);
     o.connect(lp); lp.connect(gn); gn.connect(master); o.start(t); o.stop(t + dur + .05);
   }
-  const flutter = (t, n, gap, g) => { for (let i = 0; i < n; i++) noise(t + i * gap, .06, {type:'highpass', f0:4200 + Math.random() * 1500, f1:6500, g:g * (.6 + Math.random() * .6), a:.008}); };
+  // pages riffling: a few soft, uneven puffs
+  const flutter = (t, n, gap, g) => { for (let i = 0; i < n; i++) noise(t + i * gap + Math.random() * .015, .09, {f0:900 + Math.random() * 300, f1:350, g:g * (.5 + Math.random() * .7), a:.02}); };
   return {
     unlock,
     get on(){ return on; },
     set(v){ on = v; try { localStorage.setItem('shelf-sound', v ? 'on' : 'off'); } catch (e) {} if (v) unlock(); },
     pull(){   // book slides out of the row
-      if (!ready()) return; const t = ac.currentTime; if (t - lastPull < .09) return; lastPull = t;
-      noise(t, .3, {f0:420, f1:1900, q:.8, g:.2, a:.07}); noise(t + .03, .2, {type:'highpass', f0:3200, f1:5200, g:.05, a:.04}); thump(t + .27, 130, .1, .1);
+      if (!ready()) return; const t = ac.currentTime; if (t - lastPull < .12) return; lastPull = t;
+      noise(t, .34, {f0:240, f1:760, g:.13, a:.1}); thump(t + .3, 85, .14, .06);
     },
     push(){   // ...and slides back in
       if (!ready()) return; const t = ac.currentTime;
-      noise(t, .26, {f0:1700, f1:420, q:.8, g:.13, a:.05}); thump(t + .22, 110, .09, .09);
+      noise(t, .3, {f0:700, f1:220, g:.1, a:.07}); thump(t + .26, 78, .14, .06);
     },
-    cover(){  // cover swings open on its spine: creak, thud, page flutter
+    cover(){  // cover swings open on its spine: creak, soft thud, pages settle
       if (!ready()) return; const t = ac.currentTime;
-      creak(t, .62, 150, 240, .05); noise(t, .6, {f0:260, f1:800, q:.7, g:.13, a:.2});
-      thump(t + .56, 72, .26, .38); flutter(t + .64, 7, .04, .06);
+      creak(t, .6, 110, 170, .035); noise(t, .6, {f0:200, f1:520, g:.09, a:.25});
+      thump(t + .56, 62, .3, .2); flutter(t + .64, 5, .05, .05);
     },
     whoosh(){ // the beige page rushes at the camera
       if (!ready()) return; const t = ac.currentTime;
-      noise(t, .85, {f0:260, f1:3600, q:.5, g:.28, a:.55}); thump(t + .72, 60, .2, .18);
+      noise(t, .8, {f0:180, f1:900, g:.17, a:.5}); thump(t + .7, 55, .24, .1);
     },
-    shelve(){ // new books fly in and thud onto the board one after another
+    shelve(){ // new books drop onto the board one after another
       if (!ready()) return; const t = ac.currentTime;
-      noise(t, .45, {f0:300, f1:2600, q:.6, g:.16, a:.15});
-      for (let i = 0; i < 7; i++) thump(t + .32 + i * .075 + Math.random() * .03, 70 + Math.random() * 25, .1, .1 + Math.random() * .06);
+      noise(t, .45, {f0:200, f1:600, g:.09, a:.18});
+      for (let i = 0; i < 6; i++) thump(t + .32 + i * .085 + Math.random() * .035, 62 + Math.random() * 22, .13, .07 + Math.random() * .05);
     },
     whooshBack(){
       if (!ready()) return; const t = ac.currentTime;
-      noise(t, .8, {f0:3600, f1:260, q:.5, g:.24, a:.18});
+      noise(t, .75, {f0:900, f1:180, g:.14, a:.2});
     },
     coverClose(){ // cover closes again
       if (!ready()) return; const t = ac.currentTime;
-      flutter(t, 5, .04, .05); noise(t + .1, .5, {f0:800, f1:240, q:.7, g:.1, a:.1});
-      creak(t + .08, .5, 240, 150, .04); thump(t + .56, 78, .24, .4);
+      flutter(t, 4, .05, .04); noise(t + .1, .5, {f0:520, f1:180, g:.07, a:.15});
+      creak(t + .08, .5, 170, 110, .03); thump(t + .56, 66, .28, .2);
     }
   };
 })();

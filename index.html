@@ -6,7 +6,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#e0d7c6">
+<meta name="theme-color" content="#f1efe9">
 <title>The Endless Shelf</title>
 <meta name="description" content="An endless shelf of worn books. Pull a spine, turn the book to its cover, open it and watch the page spread like ink.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,16 +42,9 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;background:var(--room);color:var(--ink-soft);font-family:var(--font-ui);-webkit-font-smoothing:antialiased}
 
-/* ---------- themes: only tokens change ---------- */
-html[data-theme=gallery]{--room:#16181a;--room-rgb:22 24 26;--wall-a:#1e2225;--wall-b:#181b1e;--board-a:#30363a;--board-b:#262b2e;--paper:#f3f0ea;--card:rgba(30,34,37,.94);--btn:rgba(255,255,255,.07);--btn-hover:rgba(255,255,255,.15);--ink:#ece8df;--ink-soft:#d9d5cb;--accent:#d2b179;--accent-deep:#ecd3a1;--line:rgba(236,232,223,.24);--shadow-rgb:0 0 0;--p-accent:#7a5b24;--p-accent-deep:#4a3510}
-html[data-theme=bone]{--room:#f6f3ee;--room-rgb:246 243 238;--wall-a:#ebe5dd;--wall-b:#e2dbd1;--board-a:#d4c8b8;--board-b:#c3b5a2;--paper:#faf8f4;--ink:#221c19;--ink-soft:#30292a;--accent:#7a2430;--accent-deep:#4f1520;--line:rgba(34,28,25,.2);--shadow-rgb:40 26 22;--p-ink:#221c19;--p-accent:#7a2430;--p-accent-deep:#4f1520;--p-line:rgba(34,28,25,.2)}
-html[data-theme=blueprint]{--room:#f3f5f6;--room-rgb:243 245 246;--wall-a:#dde3ea;--wall-b:#d2d9e2;--board-a:#b8c1cd;--board-b:#a5afbd;--paper:#fbfbf9;--ink:#14202e;--ink-soft:#22303f;--accent:#213a5e;--accent-deep:#11223d;--line:rgba(20,32,46,.2);--shadow-rgb:18 26 40;--p-ink:#14202e;--p-accent:#213a5e;--p-accent-deep:#11223d;--p-line:rgba(20,32,46,.2)}
+/* ---------- paper-side overrides: pages, sheets and popovers keep dark ink on paper ---------- */
 .page,.sheet,.intro{--ink:var(--p-ink);--ink-soft:var(--p-ink);--accent:var(--p-accent);--accent-deep:var(--p-accent-deep);--line:var(--p-line);--card:rgba(255,255,255,.78);--btn:rgba(255,255,255,.72);--btn-hover:#fff}
 .x.dark{--btn:rgba(255,255,255,.72);--btn-hover:#fff;--ink-soft:var(--p-ink);--line:var(--p-line);color:var(--p-ink)}
-.themes{display:flex;gap:8px;align-items:center;pointer-events:auto;margin-right:6px}
-.themes button{width:18px;height:18px;border-radius:50%;border:1px solid var(--line);padding:0;cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s}
-.themes button:hover{transform:scale(1.15)}
-.themes button[aria-pressed=true]{box-shadow:0 0 0 2px var(--room),0 0 0 3px var(--accent)}
 
 /* ---------- room ---------- */
 .shelf{position:fixed;left:0;right:0;bottom:0;top:var(--head);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
@@ -276,7 +269,7 @@ dt{letter-spacing:.18em;text-transform:uppercase;font-size:10px;opacity:.6;paddi
 <header class="head">
   <h1><img class="shoplogo" src="logo.png" alt="" hidden onload="this.hidden=false">The Endless Shelf</h1>
   <nav class="tabs" id="tabs" aria-label="Site"></nav>
-  <div class="hr"><div class="themes" id="themes" role="group" aria-label="Colour theme"></div><button id="snd" class="snd" type="button" aria-pressed="true">Sound on</button></div>
+  <div class="hr"><button id="snd" class="snd" type="button" aria-pressed="true">Sound on</button></div>
 </header>
 <main class="shelf" id="shelf" aria-label="Bookshelf"></main>
 <nav class="rail" id="rail" aria-label="Shelves"></nav>
@@ -925,19 +918,6 @@ function showIntro(key){
   intro.classList.add('show'); clearTimeout(introT); introT = setTimeout(() => intro.classList.remove('show'), 9000);
 }
 intro.addEventListener('click', () => intro.classList.remove('show'));
-/* colour themes (tokens only) */
-const THEMES = [['chalk','Chalk & Sage','#f1efe9','#d6dad2','#2a4a40'],['gallery','Gallery Dark','#16181a','#262b2e','#d2b179'],['bone','Bone & Oxblood','#f6f3ee','#d4c8b8','#7a2430'],['blueprint','Blueprint','#f3f5f6','#a5afbd','#213a5e']];
-function applyTheme(k, save){
-  const th = THEMES.find(t => t[0] === k) || THEMES[0];
-  if (th[0] === 'chalk') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = th[0];
-  document.querySelector('meta[name=theme-color]').content = th[2];
-  [...document.getElementById('themes').children].forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === th[0])));
-  if (save) try { localStorage.setItem('shelf-theme', th[0]); } catch (e) {}
-}
-THEMES.forEach(t => { const b = $('button'); b.type = 'button'; b.dataset.k = t[0]; b.title = t[1]; b.setAttribute('aria-label', t[1]);
-  b.style.background = `linear-gradient(135deg,${t[2]} 0 40%,${t[3]} 40% 70%,${t[4]} 70%)`; b.addEventListener('click', () => applyTheme(t[0], true)); document.getElementById('themes').append(b); });
-let savedTheme = null; try { savedTheme = new URLSearchParams(location.search).get('theme') || localStorage.getItem('shelf-theme'); } catch (e) {}
-applyTheme(savedTheme || 'chalk');
 setMetrics();
 place(true);
 })();

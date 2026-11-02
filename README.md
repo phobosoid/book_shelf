@@ -14,3 +14,6 @@ python3 -m http.server 8000   # then open http://localhost:8000/
 
 ## Focus model (UX)
 One shelf is the **main** shelf (60% of the viewport, full colour, big title). The others are quiet strips that show only the tops of the spines and are dimmed. Wheel, ↑/↓, vertical swipe, the dots on the right, or a click on a strip makes another shelf the main one (the stack slides, strips grow/shrink with the same easing). Tuning: `activeH()` / `stripH()` and `--dur`, `--ease` in `:root`.
+
+## Palette
+Chalk & Sage: neutral chalk room, sage-grey shelf wall, stone boards, ink-green accent (`--accent`), neutral shadows (`--shadow-rgb`). Only the books bring colour. All colours are tokens at the top of `:root`; `--p-*` are the same roles for text on paper (book pages, About/Contact).

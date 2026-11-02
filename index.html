@@ -96,8 +96,8 @@ body.sheet-open .rail,body.sheet-open .hint{opacity:0;pointer-events:none}
 
 /* ---------- book (3D box: spine faces the viewer) ---------- */
 .book{position:absolute;transform-style:preserve-3d;transform-origin:50% 50% 0;outline:none}
-.track .book{transform-origin:50% 100% 0;transform:translateZ(var(--z0)) rotateZ(var(--lean));transition:transform .5s cubic-bezier(.2,.8,.2,1);cursor:pointer}
-.track .book.pulled{transform:translateZ(var(--z1)) rotateY(-90deg)}
+.track .book{transform-origin:50% 100% 0;transform:translateX(var(--sx,0px)) translateZ(var(--z0)) rotateZ(var(--lean));transition:transform .55s cubic-bezier(.2,.8,.2,1);cursor:pointer}
+.track .book.pulled{transform:translateZ(var(--z1)) rotateZ(-4deg) rotateY(-90deg)}   /* cover to the viewer, tipped slightly anticlockwise */
 /* resting books show only their spine: side faces of neighbours overlap and z-fight (the shimmer) */
 .track .back,.track .topf{display:none}   /* shelf books show only the spine; top faces smear towards the vanishing point */
 .track .book .leaf{visibility:hidden;transition:visibility 0s .5s}
@@ -646,8 +646,21 @@ const endDrag = () => { if (down && !dragging && state === 'shelf' && Math.abs(d
 addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
 addEventListener('wheel', e => { if (state !== 'shelf') return; if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) vel = Math.max(-2600, Math.min(2600, vel + e.deltaX * 4)); else if (Math.abs(e.deltaY) > 8) nextShelf(e.deltaY > 0 ? 1 : -1); }, {passive:true});   // vertical wheel: next / previous shelf
 /* hover: the book slides out and turns its cover towards you; click opens it */
+/* the neighbours part to make room for the pulled-out cover */
+let spreadTrack = null;
+function spread(el){
+  if (spreadTrack && (!el || el.parentNode !== spreadTrack)) { spreadTrack.querySelectorAll('.book').forEach(b => b.style.removeProperty('--sx')); spreadTrack = null; }
+  if (!el) return;
+  const bk = BOOKS[+el.dataset.i], sh = ((bk.d || D) - bk.w) * u / 2 + 15 * u, x = parseFloat(el.style.left);
+  spreadTrack = el.parentNode;
+  spreadTrack.querySelectorAll('.book').forEach(o => {
+    if (o === el) { o.style.removeProperty('--sx'); return; }
+    o.style.setProperty('--sx', (parseFloat(o.style.left) < x ? -sh : sh) + 'px');
+  });
+}
 function setPulled(el, silent){
   if (pulledEl === el) return;
+  spread(el);
   if (pulledEl) pulledEl.classList.remove('pulled');
   if (!silent) { if (el) Snd.pull(); else Snd.push(); }
   pulledEl = el; if (el) el.classList.add('pulled');
